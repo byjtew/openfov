@@ -33,7 +33,7 @@ uninstall walkthrough, including a SmartScreen screenshot.
 2. The first-run wizard walks you through: pick a webcam → calibrate
    your neutral pose (look straight, press the button) → read the
    in-game tips → done.
-3. Launch iRacing. In **Options → Graphics**, enable **TrackIR**.
+3. Launch iRacing. TrackIR should be enabled by default! If not, in **Options → Graphics**, enable **TrackIR**.
 4. Drive.
 
 To recenter your view at any time, press **F9**.
