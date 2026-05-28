@@ -1,0 +1,9 @@
+# Optional. Sponsor button on the repo page wires here.
+# Uncomment whichever platforms you've set up and put your handle in.
+# Leaving everything commented means no Sponsor button shows — fine
+# for now; flip on when you're ready to accept support.
+
+# github: epalosh                # https://github.com/sponsors enrolled?
+# ko_fi: epalosh                 # https://ko-fi.com/epalosh
+# patreon: epalosh
+# custom: ["https://your-site"]  # any other URL (e.g. PayPal.me)
