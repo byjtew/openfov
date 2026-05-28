@@ -4,7 +4,7 @@ Webcam head tracking for iRacing — install, calibrate, drive.
 
 ## What this is
 
-OpenFOV turns any ordinary webcam into a head tracker for sim and flight games.
+OpenFOV turns any ordinary webcam into a head tracker for iRacing.
 It watches your face with MediaPipe, smooths the result, and feeds it to games
 through the same TrackIR / NPClient interface they already support — no extra
 hardware, no proprietary device.
