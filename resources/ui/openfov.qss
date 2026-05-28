@@ -1,0 +1,329 @@
+/* OpenFOV — central dark theme.
+ *
+ * Tight palette: ink (#0f1216) base, slate panels (#1a1f25), thin
+ * borders (#2c333b), teal accent (#34ae9e) for active controls.
+ *
+ * Goals: consistent across Windows builds (no inherited "raw Qt"
+ * feel), legible against the camera preview, doesn't fight the
+ * monospace pose readout.
+ */
+
+QWidget {
+    background-color: #14181d;
+    color: #e2e6ea;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 9.5pt;
+}
+
+QMainWindow, QDialog, QScrollArea, QScrollArea > QWidget > QWidget {
+    background-color: #14181d;
+}
+
+QFrame[frameShape="4"], QFrame[frameShape="5"], QFrame[frameShape="6"] {
+    background-color: #1a1f25;
+    border: 1px solid #2c333b;
+    border-radius: 4px;
+}
+
+/* Axis-panel "disabled" visual — the panel's own background dims and all
+ * child labels go muted. The enabled checkbox itself stays vivid so the
+ * user can flip the axis back on. */
+QFrame[axisDisabled="true"] {
+    background-color: #12161b;
+    border-color: #1f242b;
+}
+QFrame[axisDisabled="true"] QLabel {
+    color: #5a6068;
+}
+
+QStatusBar {
+    background-color: #10141a;
+    color: #9aa4ad;
+    border-top: 1px solid #2c333b;
+}
+
+QLabel {
+    background-color: transparent;
+    border: none;
+    color: #d6dbe1;
+}
+
+QPushButton {
+    background-color: #232a32;
+    color: #e2e6ea;
+    border: 1px solid #353e48;
+    border-radius: 3px;
+    padding: 5px 14px;
+    min-height: 22px;
+}
+QPushButton:hover {
+    background-color: #2c343d;
+    border-color: #44505c;
+}
+QPushButton:pressed {
+    background-color: #1a2026;
+}
+QPushButton:disabled {
+    color: #555c63;
+    background-color: #1a1f25;
+}
+QPushButton:checked {
+    background-color: #2a4d49;
+    border-color: #34ae9e;
+    color: #cfeae5;
+}
+
+/* Inline reset link used next to every adjustable parameter. Plain
+ * "Reset" text, no border, muted color, underline on hover. Reads as a
+ * link rather than a button so it never fights the primary slider for
+ * visual weight. */
+QPushButton[reset="true"] {
+    min-height: 18px;
+    padding: 0 4px;
+    background-color: transparent;
+    border: none;
+    color: #7a838c;
+    font-size: 8pt;
+    text-align: left;
+}
+QPushButton[reset="true"]:hover {
+    color: #cfeae5;
+    text-decoration: underline;
+}
+QPushButton[reset="true"]:pressed {
+    color: #34ae9e;
+}
+
+QCheckBox {
+    spacing: 6px;
+    background: transparent;
+    color: #d6dbe1;
+}
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #44505c;
+    border-radius: 3px;
+    background-color: #1a1f25;
+}
+QCheckBox::indicator:hover {
+    border-color: #5a6671;
+}
+QCheckBox::indicator:checked {
+    background-color: #34ae9e;
+    border-color: #34ae9e;
+    /* {CHECK_PATH} is substituted at load time in ui/resources.py.
+     * The SVG check mark renders crisp at any DPI. */
+    image: url("{CHECK_PATH}");
+}
+QCheckBox::indicator:checked:disabled {
+    background-color: #2a4d49;
+    border-color: #2a4d49;
+}
+
+QComboBox {
+    background-color: #1a1f25;
+    border: 1px solid #353e48;
+    border-radius: 3px;
+    padding: 3px 10px;
+    color: #e2e6ea;
+    min-height: 22px;
+}
+QComboBox:hover { border-color: #44505c; }
+QComboBox QAbstractItemView {
+    background-color: #1a1f25;
+    border: 1px solid #353e48;
+    selection-background-color: #2a4d49;
+    color: #e2e6ea;
+    padding: 2px;
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    border: none;
+    width: 22px;
+}
+QComboBox::down-arrow {
+    image: url("{ARROW_DOWN_PATH}");
+    width: 10px;
+    height: 10px;
+}
+QComboBox::down-arrow:disabled {
+    /* Keep the glyph but render it muted via the parent's disabled state. */
+    image: url("{ARROW_DOWN_PATH}");
+}
+
+QSlider::groove:horizontal {
+    background: #1a1f25;
+    border: 1px solid #2c333b;
+    height: 5px;
+    border-radius: 2px;
+}
+QSlider::sub-page:horizontal {
+    background: #34ae9e;
+    border-radius: 2px;
+}
+QSlider::handle:horizontal {
+    background: #cfeae5;
+    border: 1px solid #34ae9e;
+    width: 14px;
+    margin: -5px 0;
+    border-radius: 7px;
+}
+QSlider::handle:horizontal:hover {
+    background: #ffffff;
+}
+QSlider::groove:horizontal:disabled {
+    background: #14181d;
+    border-color: #1f242b;
+}
+QSlider::sub-page:horizontal:disabled {
+    background: #2c333b;
+}
+QSlider::handle:horizontal:disabled {
+    background: #353e48;
+    border-color: #2c333b;
+}
+
+/* Disabled-state styling for all the inputs that live inside an axis
+ * panel. Without these explicit rules, custom QSS overrides Qt's
+ * automatic dimming and disabled widgets look identical to enabled. */
+QCheckBox:disabled { color: #5a6068; }
+QCheckBox::indicator:disabled {
+    background-color: #14181d;
+    border-color: #2c333b;
+}
+QComboBox:disabled {
+    background-color: #14181d;
+    border-color: #1f242b;
+    color: #5a6068;
+}
+QComboBox::drop-down:disabled { background-color: transparent; }
+QLabel:disabled { color: #5a6068; }
+
+QScrollBar:vertical {
+    background: #14181d;
+    width: 12px;
+    margin: 0;
+}
+QScrollBar::handle:vertical {
+    background: #2c333b;
+    min-height: 24px;
+    border-radius: 3px;
+    margin: 2px;
+}
+QScrollBar::handle:vertical:hover { background: #44505c; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
+
+QScrollBar:horizontal {
+    background: #14181d;
+    height: 12px;
+    margin: 0;
+}
+QScrollBar::handle:horizontal {
+    background: #2c333b;
+    min-width: 24px;
+    border-radius: 3px;
+    margin: 2px;
+}
+QScrollBar::handle:horizontal:hover { background: #44505c; }
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: none; }
+
+QMenu {
+    background-color: #1a1f25;
+    border: 1px solid #2c333b;
+    color: #e2e6ea;
+    padding: 4px 0;
+}
+QMenu::item {
+    padding: 5px 24px;
+}
+QMenu::item:selected {
+    background-color: #2a4d49;
+    color: #cfeae5;
+}
+QMenu::separator {
+    height: 1px;
+    background: #2c333b;
+    margin: 4px 6px;
+}
+
+QToolTip {
+    background-color: #1a1f25;
+    color: #e2e6ea;
+    border: 1px solid #34ae9e;
+    padding: 4px 6px;
+}
+
+/* Settings dialog tabs — without these the tabs are invisible because
+ * Qt's defaults fight the dark palette. */
+QTabWidget::pane {
+    background-color: #1a1f25;
+    border: 1px solid #2c333b;
+    border-radius: 4px;
+    top: -1px;
+}
+QTabBar {
+    background: transparent;
+}
+QTabBar::tab {
+    background-color: #14181d;
+    color: #9aa4ad;
+    padding: 7px 16px;
+    border: 1px solid #2c333b;
+    border-bottom: none;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    margin-right: 2px;
+    min-width: 70px;
+}
+QTabBar::tab:selected {
+    background-color: #1a1f25;
+    color: #cfeae5;
+    border-color: #34ae9e;
+    /* Pull selected tab down 1px so its bottom edge merges with the
+     * pane and the seam disappears. */
+    margin-bottom: -1px;
+    padding-bottom: 8px;
+}
+QTabBar::tab:hover:!selected {
+    background-color: #1f242b;
+    color: #d6dbe1;
+}
+
+QDialog {
+    background-color: #14181d;
+}
+
+QDialogButtonBox QPushButton {
+    min-width: 78px;
+}
+
+/* Setup wizard — Qt's ModernStyle gives us a clean two-region layout
+ * (header + content). The QSS below colors both regions to match the
+ * rest of the app and gives the header room to breathe. */
+QWizard {
+    background-color: #14181d;
+}
+QWizard QWidget {
+    background-color: #14181d;
+    color: #e2e6ea;
+}
+/* The header region (title + subtitle) — these objectNames are stable
+ * across Qt 6.x for the ModernStyle wizard. */
+QWizard QLabel#qt_wizard_titleLabel {
+    color: #cfeae5;
+    font-size: 17pt;
+    font-weight: 600;
+    padding: 4px 0;
+}
+QWizard QLabel#qt_wizard_subTitleLabel {
+    color: #9aa4ad;
+    font-size: 10pt;
+    padding-bottom: 8px;
+}
+QWizardPage {
+    background-color: #14181d;
+}

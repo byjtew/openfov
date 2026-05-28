@@ -1,0 +1,227 @@
+name: Release
+
+# Triggered on version tags (v*.*.*). Builds the native NPClient + TrackIR
+# binaries, runs Nuitka, packages with Inno Setup, scans with VirusTotal,
+# and publishes the installer as a GitHub Release.
+#
+# SignPath integration is kept ready behind a `secrets.SIGNPATH_ENABLED`
+# repo variable. When SignPath's OSS application is approved, set
+# `SIGNPATH_ENABLED=true` plus the SignPath secrets and the same workflow
+# will sign automatically with no source changes.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 0.9.0). Tag is preferred over this.'
+        required: false
+        default: '0.0.0-dev'
+
+permissions:
+  contents: write    # softprops/action-gh-release needs this
+
+jobs:
+  build:
+    name: Build installer
+    runs-on: windows-latest
+    timeout-minutes: 30
+    outputs:
+      installer_name: ${{ steps.installer.outputs.name }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $ref = "${{ github.ref }}"
+          if ($ref -like "refs/tags/v*") {
+            $v = $ref -replace "^refs/tags/v", ""
+          } else {
+            $v = "${{ inputs.version }}"
+          }
+          if (-not $v) { $v = "0.0.0-dev" }
+          Write-Output "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Building version $v"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Install MinGW-w64
+        run: |
+          choco install -y mingw
+
+      - name: Build NPClient stub + TrackIR dummy
+        shell: pwsh
+        run: |
+          $env:Path = "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin;" + $env:Path
+          pwsh ./npclient-vendor/build.ps1
+
+      - name: Verify NPClient exports
+        shell: pwsh
+        run: |
+          $dll = "resources\bin\NPClient64.dll"
+          if (-not (Test-Path $dll)) { throw "NPClient64.dll missing" }
+          $size = (Get-Item $dll).Length
+          Write-Host "NPClient64.dll = $size bytes"
+          if ($size -lt 8KB -or $size -gt 200KB) {
+            throw "NPClient64.dll size $size looks wrong"
+          }
+
+      - name: Build with Nuitka
+        shell: pwsh
+        run: |
+          pwsh ./build/nuitka_build.ps1 -Version "${{ steps.version.outputs.version }}.0"
+
+      - name: Install Inno Setup
+        run: choco install -y innosetup
+
+      - name: Build installer
+        id: installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found" }
+          & $iscc /DMyAppVersion="${{ steps.version.outputs.version }}" installer/openfov.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
+          $installer = Get-ChildItem installer/Output/OpenFOV-*-setup.exe | Select-Object -First 1
+          Write-Output "name=$($installer.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Installer: $($installer.FullName)"
+          Write-Host "Size: $($installer.Length) bytes"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openfov-installer
+          path: installer/Output/OpenFOV-*-setup.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  # ---------------------------------------------------------------------
+  # SignPath signing — STUB. Enabled by setting the SIGNPATH_ENABLED repo
+  # variable to "true" once the SignPath Foundation application clears.
+  # When disabled, the install just passes through unsigned.
+  # ---------------------------------------------------------------------
+  sign:
+    name: Sign installer (SignPath)
+    needs: build
+    runs-on: windows-latest
+    if: vars.SIGNPATH_ENABLED == 'true' && startsWith(github.ref, 'refs/tags/v')
+    timeout-minutes: 60
+
+    steps:
+      - name: Download installer
+        uses: actions/download-artifact@v4
+        with:
+          name: openfov-installer
+          path: artifact
+
+      - name: Submit to SignPath
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORG_ID }}
+          project-slug: openfov
+          signing-policy-slug: release-signing
+          github-artifact-id: ${{ github.event.workflow_run.id || github.run_id }}
+          wait-for-completion: true
+          output-artifact-directory: artifact-signed
+
+      - name: Re-upload signed installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: openfov-installer-signed
+          path: artifact-signed/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------
+  # VirusTotal scan — runs on every release to provide a transparency
+  # link in the changelog. Doesn't gate the release.
+  # ---------------------------------------------------------------------
+  scan:
+    name: VirusTotal scan
+    needs: build
+    runs-on: ubuntu-latest
+    if: secrets.VT_API_KEY != ''
+    timeout-minutes: 15
+
+    steps:
+      - name: Download installer
+        uses: actions/download-artifact@v4
+        with:
+          name: openfov-installer
+          path: artifact
+
+      - name: Scan via VirusTotal
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: |
+            artifact/*.exe
+
+  # ---------------------------------------------------------------------
+  # Publish to GitHub Releases. Picks the signed installer if SignPath
+  # ran, otherwise the unsigned build artifact.
+  # ---------------------------------------------------------------------
+  release:
+    name: GitHub Release
+    needs: [build, sign, scan]
+    if: always() && needs.build.result == 'success' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download signed installer
+        uses: actions/download-artifact@v4
+        if: needs.sign.result == 'success'
+        with:
+          name: openfov-installer-signed
+          path: release
+
+      - name: Download unsigned installer
+        uses: actions/download-artifact@v4
+        if: needs.sign.result != 'success'
+        with:
+          name: openfov-installer
+          path: release
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*.exe
+          generate_release_notes: true
+          draft: true
+          body: |
+            ## OpenFOV ${{ needs.build.outputs.version }}
+
+            **Install:**
+
+            - **Recommended:** `winget install OpenFOV` (once the WinGet
+              manifest is merged — no SmartScreen warnings).
+            - **Or:** download the `.exe` below and run it. On first
+              launch Windows may show *"Windows protected your PC"* —
+              click **More info → Run anyway**. See
+              [INSTALL.md](https://github.com/${{ github.repository }}/blob/main/docs/INSTALL.md).
+
+            **What you need to know:**
+
+            - OpenFOV is currently **unsigned** while our SignPath
+              Foundation application is in review. Once approved, the
+              SmartScreen warning goes away automatically — no rework
+              for you. We are an open-source project with full source
+              and CI transparency.
+            - Auto-generated changelog below covers everything that
+              landed since the previous release.

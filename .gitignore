@@ -1,0 +1,51 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+.venv/
+venv/
+env/
+
+# Generated Python build artifacts (setuptools, wheel). NOTE: do NOT
+# blanket-ignore `build/` — this repo's `build/` directory holds source
+# scripts (nuitka_build.ps1). The Nuitka outputs land in `dist/` and
+# in `*.build/` / `*.dist/` patterns below.
+dist/
+*.egg-info/
+*.egg
+*.spec
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Nuitka intermediate + output directories.
+*.build/
+*.dist/
+*.onefile-build/
+
+# Inno Setup output (the .exe we ship).
+installer/Output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Runtime log files written to %APPDATA%\OpenFOV\ on Windows. These
+# can land in the repo if someone runs from a checkout with a
+# misconfigured OPENFOV_APPDATA. Listed explicitly rather than the
+# old blanket `*.log` rule so we don't accidentally ignore a doc
+# file someone names .log.
+openfov.log
+openfov.log.*
+config.local.toml

@@ -1,0 +1,18 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Mid-grey wrapper tile -->
+  <rect width="256" height="256" rx="40" fill="#525a64"/>
+
+  <!-- FOV cone: solid bright teal fill framed by a darker teal
+       outline. Wider ~68° angle. Composition is centered (shifted 6 px
+       left from the original right-heavy version). -->
+  <path d="M 99 128 L 226 45 L 226 211 Z"
+        fill="#34ae9e"/>
+  <path d="M 99 128 L 226 45 M 99 128 L 226 211"
+        stroke="#1f7768" stroke-width="8"
+        stroke-linecap="round"/>
+
+  <!-- Head: pure-white halo around the dark silhouette (7 px stroke). -->
+  <circle cx="86" cy="128" r="52"
+          fill="#0a0d10"
+          stroke="#ffffff" stroke-width="7"/>
+</svg>

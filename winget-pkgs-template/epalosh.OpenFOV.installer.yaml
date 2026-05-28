@@ -1,0 +1,22 @@
+# WinGet installer manifest template.
+#
+# After the first GitHub Release lands, copy this file (and the two
+# siblings) under manifests/e/epalosh/OpenFOV/<version>/ in a
+# fork of https://github.com/microsoft/winget-pkgs and open a PR. Fill in:
+#   - InstallerUrl: direct link to the .exe from the GitHub release
+#   - InstallerSha256: `(Get-FileHash OpenFOV-x.y.z-setup.exe).Hash`
+#   - PackageVersion: matches the release tag minus the "v"
+
+PackageIdentifier: epalosh.OpenFOV
+PackageVersion: 0.1.0
+InstallerType: inno
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/epalosh/openfov/releases/download/v0.1.0/OpenFOV-0.1.0-setup.exe
+    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+    InstallerSwitches:
+      Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+      SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART
+      Custom: /CLOSEAPPLICATIONS
+ManifestType: installer
+ManifestVersion: 1.6.0

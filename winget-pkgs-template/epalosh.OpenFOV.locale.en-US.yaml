@@ -1,0 +1,40 @@
+PackageIdentifier: epalosh.OpenFOV
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: epalosh
+PublisherUrl: https://github.com/epalosh
+PublisherSupportUrl: https://github.com/epalosh/openfov/issues
+Author: OpenFOV Contributors
+PackageName: OpenFOV
+PackageUrl: https://github.com/epalosh/openfov
+License: MIT
+LicenseUrl: https://github.com/epalosh/openfov/blob/main/LICENSE
+Copyright: MIT (c) 2026 OpenFOV Contributors
+CopyrightUrl: https://github.com/epalosh/openfov/blob/main/LICENSE
+ShortDescription: Webcam head tracking for iRacing and other sim games.
+Description: |
+  OpenFOV is an open-source webcam head-tracking tool for sim/flight
+  games. It uses MediaPipe face tracking to convert your head pose into
+  TrackIR-compatible input that iRacing (and other games) consume
+  natively. Ships as a single installer with everything needed — its
+  own NPClient shim and FreeTrack writer included.
+
+  Features:
+  * MediaPipe-powered head tracking with 478 landmarks.
+  * Adaptive smoothing + outlier rejection + dead-zone for clean output.
+  * Per-axis interactive Bezier response curves.
+  * 3D pose indicator widget.
+  * iRacing auto-detection with per-game profiles.
+  * Multiple named user profiles.
+  * Configurable hotkeys, auto-start with Windows.
+Moniker: openfov
+Tags:
+  - head-tracking
+  - iracing
+  - sim-racing
+  - trackir
+  - freetrack
+  - webcam
+ReleaseNotesUrl: https://github.com/epalosh/openfov/releases/tag/v0.1.0
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

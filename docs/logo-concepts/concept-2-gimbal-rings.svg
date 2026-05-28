@@ -1,0 +1,24 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="40" fill="#1a1f25"/>
+
+  <g transform="translate(128 128)">
+    <!-- Ring 1: yaw (horizontal sweep), tilted slightly -->
+    <ellipse cx="0" cy="0" rx="92" ry="22"
+             fill="none" stroke="#34ae9e" stroke-width="3.5"
+             transform="rotate(-12)"/>
+
+    <!-- Ring 2: pitch (vertical sweep), heavy tilt -->
+    <ellipse cx="0" cy="0" rx="74" ry="20"
+             fill="none" stroke="#82c4ae" stroke-width="3"
+             transform="rotate(58)"/>
+
+    <!-- Ring 3: roll, near-vertical -->
+    <ellipse cx="0" cy="0" rx="56" ry="18"
+             fill="none" stroke="#cfeae5" stroke-width="2.5"
+             transform="rotate(88)"/>
+
+    <!-- Center anchor — keeps the eye drawn through the rings -->
+    <circle cx="0" cy="0" r="7" fill="#cfeae5"/>
+    <circle cx="0" cy="0" r="3.5" fill="#1a1f25"/>
+  </g>
+</svg>

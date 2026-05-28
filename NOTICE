@@ -1,0 +1,52 @@
+OpenFOV
+Copyright (c) 2026 OpenFOV Contributors
+
+This product includes software developed by third parties; their licenses are
+reproduced below. All bundled binaries and source carry MIT-compatible terms.
+
+--------------------------------------------------------------------------------
+MediaPipe — Apache License 2.0
+Copyright 2020-2026 The MediaPipe Authors. https://github.com/google/mediapipe
+The bundled face_landmarker.task model file is distributed under Apache 2.0.
+
+--------------------------------------------------------------------------------
+OpenCV — Apache License 2.0
+Copyright (c) OpenCV team. https://opencv.org
+
+--------------------------------------------------------------------------------
+NumPy — BSD 3-Clause License
+Copyright (c) 2005-2026 NumPy Developers. https://numpy.org
+
+--------------------------------------------------------------------------------
+PySide6 (Qt for Python) — LGPL v3
+Copyright (c) The Qt Company Ltd. https://wiki.qt.io/Qt_for_Python
+PySide6 is dynamically linked. The user may replace the bundled Qt libraries
+with their own build. See https://doc.qt.io/qt-6/lgpl.html for full LGPL terms.
+
+--------------------------------------------------------------------------------
+psutil — BSD 3-Clause License
+Copyright (c) 2009 Jay Loden, Giampaolo Rodola'. https://github.com/giampaolo/psutil
+
+--------------------------------------------------------------------------------
+pynput — LGPL v3
+Copyright (c) Moses Palmer. https://github.com/moses-palmer/pynput
+
+--------------------------------------------------------------------------------
+cv2-enumerate-cameras — MIT License
+https://pypi.org/project/cv2-enumerate-cameras/
+
+--------------------------------------------------------------------------------
+NPClient stub (bundled NPClient.dll, NPClient64.dll) — MIT License
+Originally written by Michal Navratil (uglyDwarf) as part of linuxtrack.
+Sources adapted from opentrack's contrib/npclient/ directory.
+  https://github.com/uglyDwarf/linuxtrack
+  https://github.com/opentrack/opentrack/tree/master/contrib/npclient
+
+Copyright (c) 2015 uglyDwarf
+Licensed under the MIT License (see LICENSE).
+
+--------------------------------------------------------------------------------
+TrackIR is a trademark of NaturalPoint, Inc.  OpenFOV is not affiliated with,
+endorsed by, or sponsored by NaturalPoint. Mentions of TrackIR and the
+NPClient API exist only to describe interoperability with third-party games
+that implement support for that API.

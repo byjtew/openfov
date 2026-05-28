@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>OpenFOV — Logo Concepts</title>
+  <style>
+    :root {
+      --ink: #14181d;
+      --panel: #1a1f25;
+      --border: #2c333b;
+      --text: #e2e6ea;
+      --muted: #9aa4ad;
+      --accent: #34ae9e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px;
+      background: var(--ink);
+      color: var(--text);
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+    h1 {
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      color: #cfeae5;
+    }
+    .lead {
+      margin: 0 0 32px 0;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .card h2 {
+      font-weight: 600;
+      margin: 0 0 4px 0;
+      color: #cfeae5;
+      font-size: 16pt;
+    }
+    .card .tag {
+      color: var(--muted);
+      font-size: 10pt;
+      margin: 0 0 20px 0;
+    }
+    .sizes {
+      display: flex;
+      align-items: flex-end;
+      gap: 24px;
+      padding: 16px 0;
+    }
+    .size {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .size .label {
+      font-size: 9pt;
+      color: var(--muted);
+    }
+    img {
+      display: block;
+      image-rendering: -webkit-optimize-contrast;
+    }
+    .blurb {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 10pt;
+      line-height: 1.6;
+    }
+    .blurb strong { color: var(--text); }
+    .compare {
+      margin-top: 48px;
+      padding: 24px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .compare h3 {
+      margin: 0 0 16px 0;
+      color: #cfeae5;
+      font-weight: 600;
+    }
+    .compare .row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .compare img { border: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <h1>OpenFOV Logo Concepts</h1>
+  <p class="lead">
+    Four directions, each text-free, scaling from favicon to installer art.
+    Hover/right-click any SVG to open the file directly. The bottom row
+    shows all four at 32 px so you can compare small-size legibility.
+  </p>
+
+  <div class="grid">
+
+    <div class="card">
+      <h2>#1 &mdash; FOV Cone</h2>
+      <p class="tag">Head silhouette with projecting field-of-view cone</p>
+      <div class="sizes">
+        <div class="size"><img src="concept-1-fov-cone.svg" width="160" height="160"><span class="label">160 px</span></div>
+        <div class="size"><img src="concept-1-fov-cone.svg" width="64" height="64"><span class="label">64 px</span></div>
+        <div class="size"><img src="concept-1-fov-cone.svg" width="32" height="32"><span class="label">32 px</span></div>
+        <div class="size"><img src="concept-1-fov-cone.svg" width="16" height="16"><span class="label">16 px</span></div>
+      </div>
+      <div class="blurb">
+        <strong>Reads as:</strong> &ldquo;this is about where you&rsquo;re looking.&rdquo;
+        Most literal of the four &mdash; the cone is the unambiguous icon for
+        field of view. Outline-only head keeps the cone primary.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>#2 &mdash; Gimbal Rings</h2>
+      <p class="tag">Three intersecting rotation rings &mdash; yaw, pitch, roll</p>
+      <div class="sizes">
+        <div class="size"><img src="concept-2-gimbal-rings.svg" width="160" height="160"><span class="label">160 px</span></div>
+        <div class="size"><img src="concept-2-gimbal-rings.svg" width="64" height="64"><span class="label">64 px</span></div>
+        <div class="size"><img src="concept-2-gimbal-rings.svg" width="32" height="32"><span class="label">32 px</span></div>
+        <div class="size"><img src="concept-2-gimbal-rings.svg" width="16" height="16"><span class="label">16 px</span></div>
+      </div>
+      <div class="blurb">
+        <strong>Reads as:</strong> &ldquo;3D rotation tracking, precision-engineered.&rdquo;
+        The three teal shades give the rings visual depth. Most
+        aerospace/engineering of the set. Stays crisp at 16 px.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>#3 &mdash; Tilted Disc Face</h2>
+      <p class="tag">Flat disc with grid texture &mdash; echoes the in-app pose widget</p>
+      <div class="sizes">
+        <div class="size"><img src="concept-3-tilted-disc.svg" width="160" height="160"><span class="label">160 px</span></div>
+        <div class="size"><img src="concept-3-tilted-disc.svg" width="64" height="64"><span class="label">64 px</span></div>
+        <div class="size"><img src="concept-3-tilted-disc.svg" width="32" height="32"><span class="label">32 px</span></div>
+        <div class="size"><img src="concept-3-tilted-disc.svg" width="16" height="16"><span class="label">16 px</span></div>
+      </div>
+      <div class="blurb">
+        <strong>Reads as:</strong> &ldquo;rotating disc / head pose.&rdquo; The dot at
+        the bottom edge is the facing direction. Strongest visual link to
+        the in-app smiley pose indicator. Most original of the four.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>#4 &mdash; Lens / Reticle</h2>
+      <p class="tag">Camera lens iris with crosshair tick marks</p>
+      <div class="sizes">
+        <div class="size"><img src="concept-4-lens-reticle.svg" width="160" height="160"><span class="label">160 px</span></div>
+        <div class="size"><img src="concept-4-lens-reticle.svg" width="64" height="64"><span class="label">64 px</span></div>
+        <div class="size"><img src="concept-4-lens-reticle.svg" width="32" height="32"><span class="label">32 px</span></div>
+        <div class="size"><img src="concept-4-lens-reticle.svg" width="16" height="16"><span class="label">16 px</span></div>
+      </div>
+      <div class="blurb">
+        <strong>Reads as:</strong> &ldquo;camera input, precisely targeted.&rdquo;
+        Hardware-flavored. Hints at the webcam and the tracking-lock
+        nature of the software in one symbol.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="compare">
+    <h3>Side-by-side at 32 px (taskbar size)</h3>
+    <div class="row">
+      <div class="size"><img src="concept-1-fov-cone.svg" width="32" height="32"><span class="label">#1 Cone</span></div>
+      <div class="size"><img src="concept-2-gimbal-rings.svg" width="32" height="32"><span class="label">#2 Rings</span></div>
+      <div class="size"><img src="concept-3-tilted-disc.svg" width="32" height="32"><span class="label">#3 Disc</span></div>
+      <div class="size"><img src="concept-4-lens-reticle.svg" width="32" height="32"><span class="label">#4 Lens</span></div>
+    </div>
+  </div>
+
+</body>
+</html>

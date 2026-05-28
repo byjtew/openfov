@@ -1,0 +1,110 @@
+#requires -Version 5
+<#
+.SYNOPSIS
+    Build NPClient.dll (32-bit), NPClient64.dll (64-bit), and TrackIR.exe.
+
+.DESCRIPTION
+    Compiles the vendored NPClient stub and TrackIR.exe dummy via MinGW-w64.
+    On CI (GitHub Actions windows-latest), MinGW is pre-installed; locally
+    you can install it via `choco install mingw` or `scoop install mingw`.
+
+    Outputs land in resources/bin/, ready to be picked up by the Nuitka
+    build via --include-data-dir=resources=resources.
+
+.PARAMETER OutDir
+    Where to write NPClient.dll / NPClient64.dll / TrackIR.exe.
+    Defaults to ../resources/bin relative to this script.
+
+.PARAMETER Compiler32
+    Path to a 32-bit MinGW gcc. Defaults to `i686-w64-mingw32-gcc` on PATH.
+
+.PARAMETER Compiler64
+    Path to a 64-bit MinGW gcc. Defaults to `x86_64-w64-mingw32-gcc` on PATH.
+
+.NOTES
+    The 64-bit version (NPClient64.dll) is what iRacing actually loads in
+    2024+. The 32-bit version is shipped for legacy / 32-bit games. Both
+    are exported per the NPClient.def file so name- and ordinal-binding
+    both work.
+#>
+
+[CmdletBinding()]
+param(
+    [string]$OutDir = (Join-Path $PSScriptRoot "..\resources\bin"),
+    [string]$Compiler32 = "i686-w64-mingw32-gcc",
+    [string]$Compiler64 = "x86_64-w64-mingw32-gcc"
+)
+
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+$here = $PSScriptRoot
+$src    = Join-Path $here "npclient.c"
+$def    = Join-Path $here "NPClient.def"
+$trcSrc = Join-Path $here "trackir.c"
+
+if (-not (Test-Path $src)) { throw "Missing $src" }
+if (-not (Test-Path $def)) { throw "Missing $def" }
+if (-not (Test-Path $trcSrc)) { throw "Missing $trcSrc" }
+
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+$OutDir = (Resolve-Path $OutDir).Path
+
+function Get-Tool {
+    param([string]$Name, [switch]$Required)
+    $cmd = Get-Command $Name -ErrorAction SilentlyContinue
+    if (-not $cmd) {
+        if ($Required) {
+            throw "Not found on PATH: $Name. Install MinGW-w64 (winget install BrechtSanders.WinLibs.POSIX.UCRT)."
+        }
+        return $null
+    }
+    return $cmd.Source
+}
+
+$gcc32 = Get-Tool $Compiler32              # optional; many WinLibs builds are 64-only
+$gcc64 = Get-Tool $Compiler64 -Required
+
+$commonCFlags = @(
+    "-O2", "-Os",
+    "-fno-stack-protector",
+    "-ffunction-sections", "-fdata-sections",
+    "-Wno-multichar", "-Wall",
+    "-Wno-incompatible-pointer-types",     # part1_2 etc. are `volatile`
+    "-Wl,--gc-sections",
+    "-Wl,--strip-all"
+)
+
+if ($gcc32) {
+    Write-Host "[1/3] NPClient.dll (32-bit) ..."
+    $out32 = Join-Path $OutDir "NPClient.dll"
+    & $gcc32 -m32 -march=pentium4 -shared `
+        $commonCFlags `
+        "-Wl,--kill-at" `
+        -o $out32 $src $def
+    if ($LASTEXITCODE -ne 0) { throw "32-bit NPClient.dll build failed (exit $LASTEXITCODE)" }
+}
+else {
+    Write-Host "[1/3] Skipping NPClient.dll (32-bit) - no $Compiler32 on PATH."
+    Write-Host "      iRacing is 64-bit only, so this is fine for the iRacing case."
+    Write-Host "      For legacy 32-bit games (Falcon BMS, old MSFS), install a multilib MinGW."
+}
+
+Write-Host "[2/3] NPClient64.dll (64-bit) ..."
+$out64 = Join-Path $OutDir "NPClient64.dll"
+& $gcc64 -m64 -shared `
+    $commonCFlags `
+    "-Wl,--kill-at" "-Wl,--high-entropy-va" "-Wl,--nxcompat" "-Wl,--dynamicbase" `
+    -o $out64 $src $def
+if ($LASTEXITCODE -ne 0) { throw "64-bit NPClient64.dll build failed (exit $LASTEXITCODE)" }
+
+Write-Host "[3/3] TrackIR.exe (64-bit dummy) ..."
+$trcOut = Join-Path $OutDir "TrackIR.exe"
+& $gcc64 -m64 -mwindows -O2 -Os `
+    "-Wl,--strip-all" `
+    -o $trcOut $trcSrc
+if ($LASTEXITCODE -ne 0) { throw "TrackIR.exe build failed (exit $LASTEXITCODE)" }
+
+Write-Host ""
+Write-Host "Build outputs:"
+Get-ChildItem -Path $OutDir -File | Format-Table Name, Length, LastWriteTime

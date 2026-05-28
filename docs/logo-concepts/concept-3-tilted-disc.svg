@@ -1,0 +1,27 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="40" fill="#1a1f25"/>
+
+  <g transform="translate(128 128)">
+    <!-- Main disc, tilted forward — drawn as a stretched ellipse so it
+         reads as a 3D circle viewed from above. -->
+    <ellipse cx="0" cy="0" rx="92" ry="54"
+             fill="#82c4ae"/>
+    <ellipse cx="0" cy="0" rx="92" ry="54"
+             fill="none" stroke="#34ae9e" stroke-width="2.5"/>
+
+    <!-- Grid texture, suggests the 3D rotation. Sparse so the disc
+         doesn't get noisy at small sizes. -->
+    <g stroke="#1a1f25" stroke-width="1.5" opacity="0.55" fill="none">
+      <ellipse cx="0" cy="0" rx="62" ry="36"/>
+      <ellipse cx="0" cy="0" rx="32" ry="19"/>
+      <line x1="-92" y1="0" x2="92" y2="0"/>
+      <line x1="0" y1="-54" x2="0" y2="54"/>
+    </g>
+
+    <!-- Facing-direction dot: nearest the viewer, sits on the bottom
+         arc of the tilted disc. Reads as "this is what we're tracking." -->
+    <circle cx="0" cy="46" r="9" fill="#0a0d10"/>
+    <circle cx="0" cy="46" r="9" fill="none"
+            stroke="#cfeae5" stroke-width="1.5"/>
+  </g>
+</svg>

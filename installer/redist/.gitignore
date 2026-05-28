@@ -1,0 +1,7 @@
+# Microsoft Visual C++ Redistributable installer.
+# Downloaded by installer/build_installer.ps1 from
+# https://aka.ms/vs/17/release/vc_redist.x64.exe at build time.
+# Not committed because (a) ~25 MB is too big for git history and
+# (b) Microsoft updates it independently of OpenFOV; we always want
+# the latest at release time.
+*.exe

@@ -1,0 +1,9 @@
+# Runtime dependencies. Versions deliberately loose; CI pins via pip-compile.
+PySide6>=6.6
+mediapipe>=0.10.14
+opencv-python>=4.9
+numpy>=1.26,<2.0
+psutil>=5.9
+pynput>=1.7
+cv2-enumerate-cameras>=1.1
+tomli-w>=1.0

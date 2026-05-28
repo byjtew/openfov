@@ -1,0 +1,34 @@
+# Normalize line endings across platforms.
+# Default: tell git to handle text files automatically.
+* text=auto eol=lf
+
+# Python + source uses LF.
+*.py text eol=lf
+*.pyi text eol=lf
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.qss text eol=lf
+*.svg text eol=lf
+
+# Windows-specific scripts and config use CRLF — PowerShell + Inno Setup
+# tolerate either, but native CRLF avoids one class of obscure issues
+# when end users open them in Notepad / iscc.exe / native tools.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.iss text eol=crlf
+
+# Binary files: don't touch.
+*.png binary
+*.ico binary
+*.jpg binary
+*.gif binary
+*.task binary
+*.dll binary
+*.exe binary
+*.so binary
+*.pdf binary
