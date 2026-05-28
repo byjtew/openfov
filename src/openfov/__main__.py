@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     # Critical for end-user support: the Nuitka GUI build runs with
     # --windows-console-mode=disable, so stderr goes nowhere. Without
     # this file handler users have no diagnostic output to attach to
-    # bug reports. 2 MB × 3 = 6 MB max on disk; rolls automatically.
+    # bug reports. 2 MB x 3 = 6 MB max on disk; rolls automatically.
     try:
         from logging.handlers import RotatingFileHandler
 
@@ -76,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
         file_handler.setFormatter(logging.Formatter(log_format))
         logging.getLogger().addHandler(file_handler)
         logger.info("Log file: %s", log_path)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         # Logging is best-effort. If %APPDATA% is unavailable (rare —
         # locked profiles, sandbox environments) we degrade to stderr
         # only and keep running rather than refusing to launch.
@@ -251,7 +251,7 @@ def _run_gui(camera_index: int | None) -> int:
 
     def _open_settings() -> None:
         dlg = SettingsDialog(config, parent=window)
-        def _apply(new_cfg) -> None:  # noqa: ANN001
+        def _apply(new_cfg) -> None:
             # Autostart toggle — propagate to the Windows registry.
             if new_cfg.start_with_windows != config.start_with_windows:
                 from openfov.runtime import autostart
@@ -308,7 +308,7 @@ def _run_gui(camera_index: int | None) -> int:
         new_profile = get_profile(wiz.chosen_game_id)
         if new_profile is not None:
             pipeline.set_game_output(new_profile.output)
-            window._profile.game_id = wiz.chosen_game_id  # noqa: SLF001
+            window._profile.game_id = wiz.chosen_game_id
         # Push the freshly-calibrated neutral straight into the pipeline.
         if wiz.neutral_pose is not None:
             pipeline.set_neutral(wiz.neutral_pose)
@@ -325,10 +325,10 @@ def _run_gui(camera_index: int | None) -> int:
         # Save current profile + config so the next launch picks up where
         # the user left off.
         try:
-            save_profile(window._profile)  # noqa: SLF001 — internal but stable
-            config.last_profile = window._profile.name  # noqa: SLF001
+            save_profile(window._profile)
+            config.last_profile = window._profile.name
             save_app_config(config)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("Failed to persist state on quit: %s", exc)
         instance_lock.release()
         window.allow_close()

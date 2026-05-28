@@ -337,7 +337,7 @@ class TrackIRShim:
         finally:
             _CloseHandle(snapshot)
 
-    def __enter__(self) -> "TrackIRShim":
+    def __enter__(self) -> TrackIRShim:
         self.start()
         return self
 
@@ -345,4 +345,4 @@ class TrackIRShim:
         self.stop()
 
 
-__all__ = ["TrackIRShim", "DUMMY_NAME", "dummy_path", "is_external_trackir_running"]
+__all__ = ["DUMMY_NAME", "TrackIRShim", "dummy_path", "is_external_trackir_running"]

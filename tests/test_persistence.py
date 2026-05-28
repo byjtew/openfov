@@ -144,6 +144,7 @@ def test_old_profile_without_new_filter_fields_loads_with_defaults() -> None:
     dead-zone existed) must still load. The missing fields fall back
     to defaults — median off, dead-zone 0."""
     import tomli_w
+
     from openfov.persistence.paths import profile_path
 
     name = "LegacyShape"

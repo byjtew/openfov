@@ -23,7 +23,6 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 from openfov.runtime.pipeline import PipelineStats
 from openfov.tracker.base import Pose6DOF
 
-
 # --- Face geometry, parametric. Built once at import-time. ----------------
 
 _FACE_RADIUS = 1.0
@@ -74,7 +73,7 @@ _SMILE_VERTS = _smile_3d()
 # you can't tell which way it's facing.
 
 _GRID_LINE_SAMPLES = 18
-_GRID_OFFSETS = (-0.70, -0.35, 0.0, 0.35, 0.70)  # × radius
+_GRID_OFFSETS = (-0.70, -0.35, 0.0, 0.35, 0.70)  # x radius
 
 
 def _grid_lines_3d() -> list[np.ndarray]:
@@ -148,7 +147,7 @@ class PoseWidget(QWidget):
 
     @Slot(object, object, object)
     def update_pose(
-        self, _raw: Pose6DOF, mapped: Pose6DOF, stats: "PipelineStats"
+        self, _raw: Pose6DOF, mapped: Pose6DOF, stats: PipelineStats
     ) -> None:
         """Connected to PipelineThread.pose_ready. We show the *mapped*
         pose (post-curve) so the user sees what iRacing will see."""
@@ -183,7 +182,7 @@ class PoseWidget(QWidget):
             scale = (radius_px * 4.0) / depth
             sx = cx + rotated[:, 0] * scale
             sy = cy - rotated[:, 1] * scale  # Qt's Y is down; flip
-            return QPolygonF([QPointF(float(x), float(y)) for x, y in zip(sx, sy)])
+            return QPolygonF([QPointF(float(x), float(y)) for x, y in zip(sx, sy, strict=False)])
 
         face_poly = project(_FACE_VERTS)
         left_eye_poly = project(_LEFT_EYE_VERTS)

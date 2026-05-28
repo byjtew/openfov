@@ -42,7 +42,7 @@ def test_set_game_updates_profile() -> None:
     profile_b = GameOutputProfile(game_id=2002, encryption_key=b"\x01\x02\x03\x04\x05\x06\x07\x08")
     with OutputManager() as mgr:
         mgr.set_game(profile_a)
-        assert mgr._current_profile == profile_a  # noqa: SLF001 — testing internal state
+        assert mgr._current_profile == profile_a
         mgr.set_game(profile_b)
         assert mgr._current_profile == profile_b
 
@@ -53,7 +53,7 @@ def test_set_game_same_profile_skips() -> None:
     with OutputManager() as mgr:
         mgr.set_game(profile)
         mgr.set_game(profile)  # no-op path
-        assert mgr._current_profile == profile  # noqa: SLF001
+        assert mgr._current_profile == profile
 
 
 def test_invalid_encryption_key_rejected() -> None:

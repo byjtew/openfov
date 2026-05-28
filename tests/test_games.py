@@ -8,13 +8,11 @@ empty case."""
 
 from __future__ import annotations
 
-import pytest
-
 from openfov.games import (
     BUILTIN_PROFILES,
+    IRACING_PROFILE,
     GameDetector,
     GameProfile,
-    IRACING_PROFILE,
     get_profile,
 )
 
@@ -66,7 +64,7 @@ def test_detector_proc_to_profile_lowercased() -> None:
     )
     det = GameDetector([profile], on_change=lambda _p: None)
     # Internal lookup is lowercased.
-    assert "mygame.exe" in det._proc_to_profile  # noqa: SLF001
+    assert "mygame.exe" in det._proc_to_profile
 
 
 def test_detector_start_stop_idempotent() -> None:

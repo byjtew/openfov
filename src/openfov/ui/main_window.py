@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from openfov.filtering.pipeline import AxisFilterParams
+from openfov.games.base import GameProfile
 from openfov.mapping.axis_mapper import AxisSettings
 from openfov.persistence.profiles import Profile, save_profile
 from openfov.runtime.camera import CameraInfo, enumerate_cameras
@@ -40,8 +41,6 @@ from openfov.ui.pose_readout import PoseReadout
 from openfov.ui.pose_widget import PoseWidget
 from openfov.ui.profile_bar import ProfileBar
 from openfov.ui.resources import app_icon
-
-from openfov.games.base import GameProfile
 
 if TYPE_CHECKING:
     from openfov.runtime.pipeline import PipelineStats, PipelineThread
@@ -228,13 +227,13 @@ class MainWindow(QMainWindow):
         # as a shortcut hub. We invoke the bar's slots directly.
         act_save_as = QAction("Save &as...", self)
         act_save_as.setShortcut("Ctrl+Shift+S")
-        act_save_as.triggered.connect(self._profile_bar._on_save_as)  # noqa: SLF001
+        act_save_as.triggered.connect(self._profile_bar._on_save_as)
         m_prof.addAction(act_save_as)
         act_rename = QAction("&Rename...", self)
-        act_rename.triggered.connect(self._profile_bar._on_rename)  # noqa: SLF001
+        act_rename.triggered.connect(self._profile_bar._on_rename)
         m_prof.addAction(act_rename)
         act_delete = QAction("&Delete", self)
-        act_delete.triggered.connect(self._profile_bar._on_delete)  # noqa: SLF001
+        act_delete.triggered.connect(self._profile_bar._on_delete)
         m_prof.addAction(act_delete)
 
         # View.
@@ -284,7 +283,7 @@ class MainWindow(QMainWindow):
     # Pipeline hookup (called by the entry point after construction)
     # ------------------------------------------------------------------
 
-    def attach_pipeline(self, pipeline: "PipelineThread") -> None:
+    def attach_pipeline(self, pipeline: PipelineThread) -> None:
         """Wire pipeline signals to UI slots, and UI signals to pipeline
         thread-safe control methods."""
         # Inbound
@@ -312,7 +311,7 @@ class MainWindow(QMainWindow):
             if axis in ("yaw", "pitch", "roll"):
                 self._filter_panel.set_params(axis, params)
 
-    def _push_profile_to_pipeline(self, pipeline: "PipelineThread") -> None:
+    def _push_profile_to_pipeline(self, pipeline: PipelineThread) -> None:
         for axis, settings in self._profile.axes.items():
             pipeline.update_axis_settings(axis, settings)
         for axis, params in self._profile.filters.items():
@@ -332,7 +331,7 @@ class MainWindow(QMainWindow):
             self._profile.name = self._profile_bar.current_name()
             save_profile(self._profile)
             self.statusBar().showMessage(f"saved '{self._profile.name}'", 3000)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.exception("Save failed: %s", exc)
             self.statusBar().showMessage(f"save failed: {exc}", 5000)
 
@@ -358,7 +357,7 @@ class MainWindow(QMainWindow):
 
     @Slot(object, object, object)
     def _on_pose(
-        self, raw: Pose6DOF, mapped: Pose6DOF, stats: "PipelineStats"
+        self, raw: Pose6DOF, mapped: Pose6DOF, stats: PipelineStats
     ) -> None:
         # Push the live dot into each axis's curve editor — raw input vs
         # mapped output, both in degrees. The mapper applies sensitivity

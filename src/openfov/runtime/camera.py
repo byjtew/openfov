@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import logging
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 import cv2
 import numpy as np
@@ -53,7 +53,7 @@ def enumerate_cameras() -> list[CameraInfo]:
                 cams.append(
                     CameraInfo(index=c.index, name=c.name or "Unknown", backend=str(c.backend))
                 )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("cv2-enumerate-cameras unavailable, falling back to probe: %s", exc)
 
     if not cams:
@@ -261,7 +261,7 @@ class CameraSource:
             self._backend_name = ""
             self._fourcc_negotiated = ""
 
-    def __enter__(self) -> "CameraSource":
+    def __enter__(self) -> CameraSource:
         self.open()
         return self
 

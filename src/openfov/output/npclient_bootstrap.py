@@ -144,17 +144,16 @@ def ensure_registered() -> Path:
     # DLLs. Warn but don't fail — useful for UI dev where the game isn't in
     # play anyway. The user-facing message stays generic; the dev-only
     # build instruction is logged at DEBUG.
-    if not npclient.exists() and not npclient64.exists():
-        if _is_windows():
-            logger.warning(
-                "NPClient binaries not found in %s — OpenFOV install may be "
-                "incomplete. Please reinstall.",
-                bin_dir,
-            )
-            logger.debug(
-                "Dev-mode hint: run npclient-vendor/build.ps1 to populate "
-                "resources/bin/."
-            )
+    if not npclient.exists() and not npclient64.exists() and _is_windows():
+        logger.warning(
+            "NPClient binaries not found in %s — OpenFOV install may be "
+            "incomplete. Please reinstall.",
+            bin_dir,
+        )
+        logger.debug(
+            "Dev-mode hint: run npclient-vendor/build.ps1 to populate "
+            "resources/bin/."
+        )
     write_registry_path(bin_dir)
     return bin_dir
 

@@ -12,8 +12,8 @@ from openfov.games.registry import BUILTIN_PROFILES, get_profile
 
 __all__ = [
     "BUILTIN_PROFILES",
+    "IRACING_PROFILE",
     "GameDetector",
     "GameProfile",
-    "IRACING_PROFILE",
     "get_profile",
 ]

@@ -32,9 +32,7 @@ def _is_compiled_build() -> bool:
         return True
     if getattr(sys, "_MEIPASS", None):
         return True
-    if "__compiled__" in globals():
-        return True
-    return False
+    return "__compiled__" in globals()
 
 
 @lru_cache(maxsize=1)
@@ -61,7 +59,7 @@ def app_icon():
     """Returns a QIcon. Loads `resources/icons/openfov.ico` if present, otherwise
     falls back to a runtime-painted placeholder so the app always has *something*.
     """
-    from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush
+    from PySide6.QtGui import QBrush, QColor, QIcon, QPainter, QPixmap
 
     ico = asset_path("icons", "openfov.ico")
     if ico.exists():

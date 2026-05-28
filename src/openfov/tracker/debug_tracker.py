@@ -25,13 +25,13 @@ class DebugSineTracker(Tracker):
         self._pitch_amp = pitch_amp
         self._started = False
 
-    def start(self, settings: TrackerSettings) -> None:  # noqa: ARG002
+    def start(self, settings: TrackerSettings) -> None:
         self._started = True
 
     def stop(self) -> None:
         self._started = False
 
-    def step(self, frame_bgr: np.ndarray, ts_ms: int) -> TrackerResult:  # noqa: ARG002
+    def step(self, frame_bgr: np.ndarray, ts_ms: int) -> TrackerResult:
         if not self._started:
             raise RuntimeError("DebugSineTracker.step() before start()")
         t = ts_ms / 1000.0

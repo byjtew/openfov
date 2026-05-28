@@ -153,8 +153,8 @@ class MediaPipeTracker(Tracker):
             longest = max(w, h)
             if longest > self._max_inference_dim:
                 scale = self._max_inference_dim / longest
-                new_w = max(1, int(round(w * scale)))
-                new_h = max(1, int(round(h * scale)))
+                new_w = max(1, round(w * scale))
+                new_h = max(1, round(h * scale))
                 # INTER_AREA is the right choice for downsampling — much
                 # less aliasing than bilinear and only marginally slower
                 # than INTER_LINEAR on small targets.

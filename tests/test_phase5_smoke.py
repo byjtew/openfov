@@ -26,7 +26,7 @@ def tmp_appdata(monkeypatch, tmp_path):
     return tmp_path
 
 
-def test_settings_dialog_construct(qapp, tmp_appdata) -> None:  # noqa: ARG001
+def test_settings_dialog_construct(qapp, tmp_appdata) -> None:
     from openfov.persistence.config import AppConfig
     from openfov.ui.settings_dialog import SettingsDialog
 
@@ -39,7 +39,7 @@ def test_settings_dialog_construct(qapp, tmp_appdata) -> None:  # noqa: ARG001
     assert dlg.windowTitle() == "OpenFOV Settings"
 
 
-def test_settings_dialog_emits_applied(qapp, tmp_appdata) -> None:  # noqa: ARG001
+def test_settings_dialog_emits_applied(qapp, tmp_appdata) -> None:
     from openfov.persistence.config import AppConfig
     from openfov.ui.settings_dialog import SettingsDialog
 
@@ -47,14 +47,14 @@ def test_settings_dialog_emits_applied(qapp, tmp_appdata) -> None:  # noqa: ARG0
     dlg = SettingsDialog(cfg)
     captures = []
     dlg.settings_applied.connect(captures.append)
-    dlg._on_apply()  # noqa: SLF001
+    dlg._on_apply()
     assert len(captures) == 1
     new_cfg = captures[0]
     # User didn't touch anything; values should round-trip unchanged.
     assert new_cfg.camera_width == 640
 
 
-def test_game_watcher_construct_and_emit(qapp) -> None:  # noqa: ARG001
+def test_game_watcher_construct_and_emit(qapp) -> None:
     from openfov.games import IRACING_PROFILE
     from openfov.runtime.game_watcher import GameWatcher
 
@@ -66,7 +66,7 @@ def test_game_watcher_construct_and_emit(qapp) -> None:  # noqa: ARG001
     assert w.current is None
 
 
-def test_main_window_has_menu_bar(qapp, tmp_appdata) -> None:  # noqa: ARG001
+def test_main_window_has_menu_bar(qapp, tmp_appdata) -> None:
     from openfov.persistence.profiles import Profile
     from openfov.ui.main_window import MainWindow
 
@@ -82,7 +82,7 @@ def test_main_window_has_menu_bar(qapp, tmp_appdata) -> None:  # noqa: ARG001
     win.close()
 
 
-def test_main_window_request_settings_signal(qapp, tmp_appdata) -> None:  # noqa: ARG001
+def test_main_window_request_settings_signal(qapp, tmp_appdata) -> None:
     from openfov.persistence.profiles import Profile
     from openfov.ui.main_window import MainWindow
 
@@ -97,15 +97,15 @@ def test_main_window_request_settings_signal(qapp, tmp_appdata) -> None:  # noqa
     win.close()
 
 
-def test_on_game_changed_updates_badge(qapp, tmp_appdata) -> None:  # noqa: ARG001
+def test_on_game_changed_updates_badge(qapp, tmp_appdata) -> None:
     from openfov.games import IRACING_PROFILE
     from openfov.persistence.profiles import Profile
     from openfov.ui.main_window import MainWindow
 
     win = MainWindow(initial_profile=Profile(name="Default"))
     win.on_game_changed(IRACING_PROFILE)
-    assert "iRacing" in win._game_badge.text()  # noqa: SLF001
+    assert "iRacing" in win._game_badge.text()
     win.on_game_changed(None)
-    assert "no game" in win._game_badge.text().lower()  # noqa: SLF001
+    assert "no game" in win._game_badge.text().lower()
     win.allow_close()
     win.close()

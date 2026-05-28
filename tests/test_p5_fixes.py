@@ -31,7 +31,7 @@ def test_appconfig_always_on_top_roundtrip(monkeypatch, tmp_path) -> None:
     assert back.always_on_top is True
 
 
-def test_main_window_applies_always_on_top(qapp, monkeypatch, tmp_path) -> None:  # noqa: ARG001
+def test_main_window_applies_always_on_top(qapp, monkeypatch, tmp_path) -> None:
     from PySide6.QtCore import Qt
 
     monkeypatch.setenv("OPENFOV_APPDATA", str(tmp_path))
@@ -56,8 +56,8 @@ def test_pipeline_set_neutral_stores_value() -> None:
     p.set_neutral(Pose6DOF(yaw=12.0, pitch=-5.0, roll=2.0))
     # internal state — verifying via the contract that recenter is cleared
     # and neutral is populated.
-    assert p._neutral is not None  # noqa: SLF001
-    assert p._neutral[0] == 12.0   # noqa: SLF001
-    assert p._neutral[1] == -5.0   # noqa: SLF001
-    assert p._neutral[2] == 2.0    # noqa: SLF001
-    assert p._recenter_requested is False  # noqa: SLF001
+    assert p._neutral is not None
+    assert p._neutral[0] == 12.0
+    assert p._neutral[1] == -5.0
+    assert p._neutral[2] == 2.0
+    assert p._recenter_requested is False

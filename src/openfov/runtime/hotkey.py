@@ -55,7 +55,7 @@ class GlobalHotkey(QObject):
             hk.start()
             self._listener = hk
             logger.debug("Global hotkey %r registered", self._key)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             # Invalid key spec, OS denial, etc. Don't crash the app.
             logger.warning("Failed to register hotkey %r: %s", self._key, exc)
             self._listener = None
@@ -65,7 +65,7 @@ class GlobalHotkey(QObject):
             return
         try:
             self._listener.stop()  # type: ignore[attr-defined]
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("Hotkey stop raised (benign): %s", exc)
         self._listener = None
 

@@ -71,7 +71,7 @@ class OutputManager:
             try:
                 ensure_registered()
                 self._registered = True
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("NPClient registry update failed: %s", exc)
         self._writer.open()
         self._shim.start()
@@ -86,7 +86,7 @@ class OutputManager:
         self._running = False
         logger.info("OutputManager stopped")
 
-    def __enter__(self) -> "OutputManager":
+    def __enter__(self) -> OutputManager:
         self.start()
         return self
 

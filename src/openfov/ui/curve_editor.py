@@ -34,7 +34,6 @@ Editing rules:
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, replace
 
 import numpy as np
@@ -57,11 +56,10 @@ from openfov.mapping.presets import (
     soft_center,
 )
 
-
 # Preset list shared with the AxisPanel's dropdown — each entry is
 # (label_for_user, factory_taking_domain). The dropdown applies the
 # factory at the editor's current domain.
-PRESETS: tuple[tuple[str, "callable"], ...] = (
+PRESETS: tuple[tuple[str, callable], ...] = (
     ("Linear (default)", linear),
     ("Soft center", soft_center),
     ("Aggressive edges", aggressive_edges),
@@ -212,7 +210,7 @@ class CurveEditor(QWidget):
         path = QPolygonF(
             [
                 layout.value_to_point(float(x), float(y))
-                for x, y in zip(self._sample_xs, self._sample_ys)
+                for x, y in zip(self._sample_xs, self._sample_ys, strict=False)
             ]
         )
         pen = QPen(QColor(82, 196, 174), 2)
@@ -252,7 +250,7 @@ class CurveEditor(QWidget):
                 return i
         return None
 
-    def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: D401
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         pos = event.position()
         idx = self._index_under(pos)
         if event.button() == Qt.LeftButton:
@@ -275,7 +273,7 @@ class CurveEditor(QWidget):
             if idx is not None and 0 < idx < len(self._curve.points) - 1:
                 self._remove_point(idx)
 
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:  # noqa: D401
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self._drag_index is None:
             self._hover_index = self._index_under(event.position())
             self.update()
@@ -284,7 +282,7 @@ class CurveEditor(QWidget):
         x, y = layout.point_to_value(event.position())
         self._update_point(self._drag_index, x, y)
 
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: D401, ARG002
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self._drag_index = None
 
     # ------------------------------------------------------------------
@@ -358,4 +356,4 @@ class CurveEditor(QWidget):
         self.changed.emit(self._curve)
 
 
-__all__ = ["CurveEditor", "PRESETS"]
+__all__ = ["PRESETS", "CurveEditor"]

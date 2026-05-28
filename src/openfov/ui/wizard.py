@@ -26,6 +26,7 @@ the work loads with the user already looking at the destination page.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 
 import cv2
@@ -100,7 +101,7 @@ class _CameraOpenWorker(QThread):
         self._width = width
         self._height = height
 
-    def run(self) -> None:  # noqa: D401
+    def run(self) -> None:
         cap: cv2.VideoCapture | None = None
         for backend in (cv2.CAP_ANY, cv2.CAP_MSMF, cv2.CAP_DSHOW):
             try:
@@ -110,10 +111,8 @@ class _CameraOpenWorker(QThread):
             if c.isOpened():
                 cap = c
                 break
-            try:
+            with contextlib.suppress(cv2.error):
                 c.release()
-            except cv2.error:
-                pass
         if cap is not None:
             try:
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
@@ -133,12 +132,12 @@ class _TrackerInitWorker(QThread):
 
     ready = Signal(object)  # MediaPipeTracker or None on failure
 
-    def run(self) -> None:  # noqa: D401
+    def run(self) -> None:
         try:
             t = MediaPipeTracker()
             t.start(TrackerSettings())
             self.ready.emit(t)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.exception("Wizard tracker init failed: %s", exc)
             self.ready.emit(None)
 
@@ -226,7 +225,7 @@ class _LivePreview(QLabel):
         if not self._tracker_enabled:
             try:
                 tracker.stop()  # type: ignore[attr-defined]
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("Discarded tracker stop raised: %s", exc)
             return
         self._tracker = tracker  # type: ignore[assignment]
@@ -258,7 +257,7 @@ class _LivePreview(QLabel):
             if cap is not None:
                 try:
                     cap.release()  # type: ignore[attr-defined]
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     logger.debug("Discarded VideoCapture release raised: %s", exc)
             return
         if cap is None:
@@ -292,7 +291,7 @@ class _LivePreview(QLabel):
         if self._tracker is not None:
             try:
                 self._tracker.stop()
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("Tracker stop raised: %s", exc)
             self._tracker = None
         if self._frame_index > 0:
@@ -316,7 +315,7 @@ class _LivePreview(QLabel):
                 result = self._tracker.step(frame, self._frame_index * 33)
                 self._landmarks = result.landmarks_2d
                 self.pose_ready.emit(result.pose, result.detected, result.landmarks_2d)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("Tracker step raised: %s", exc)
         else:
             self._landmarks = None
@@ -348,10 +347,8 @@ class _LivePreview(QLabel):
         self.setPixmap(pix)
 
     def __del__(self) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.stop()
-        except Exception:  # noqa: BLE001
-            pass
 
 
 # ---------------------------------------------------------------------------
@@ -437,7 +434,7 @@ class _CameraPage(QWizardPage):
         # the preview without the user having to reselect.
         self._last_selected: int | None = None
 
-    def initializePage(self) -> None:  # noqa: D401
+    def initializePage(self) -> None:
         # Page transition first; camera enumeration + first open happen
         # one event-loop tick later so Next feels instantaneous.
         QTimer.singleShot(0, self._populate_and_open)
@@ -465,7 +462,7 @@ class _CameraPage(QWizardPage):
             self._preview.setText("Select a camera above to see the live preview.")
         self._on_selection_changed(self._combo.currentIndex())
 
-    def validatePage(self) -> bool:  # noqa: D401
+    def validatePage(self) -> bool:
         """Called when the user clicks Next. Release the VideoCapture
         immediately so the next page can claim the same physical camera
         without OpenCV's per-backend retry stall (the prior lag source).
@@ -479,13 +476,13 @@ class _CameraPage(QWizardPage):
         self._preview.stop()
         return True
 
-    def cleanupPage(self) -> None:  # noqa: D401
+    def cleanupPage(self) -> None:
         # Called when the user clicks Back from a *later* page. Same
         # cleanup applies — release the device. showEvent will re-open
         # if we return here.
         self._preview.stop()
 
-    def showEvent(self, event) -> None:  # noqa: D401, ANN001
+    def showEvent(self, event) -> None:
         """Re-open the camera preview when the page becomes visible
         again after the user navigated back. validatePage() and
         cleanupPage() both stopped the capture; we need to re-establish
@@ -584,7 +581,7 @@ class _CalibratePage(QWizardPage):
         self._latest_pose: Pose6DOF | None = None
         self._neutral_captured: Pose6DOF | None = None
 
-    def initializePage(self) -> None:  # noqa: D401
+    def initializePage(self) -> None:
         cam_index = int(self.field("camera_index"))
         self._calibrate_btn.setEnabled(False)
         self._status.setText("")
@@ -597,7 +594,7 @@ class _CalibratePage(QWizardPage):
         self._preview.set_tracker_enabled(True, draw_overlay=True)
         self._preview.open_camera(cam_index)
 
-    def cleanupPage(self) -> None:  # noqa: D401
+    def cleanupPage(self) -> None:
         self._preview.stop()
 
     def _on_pose(

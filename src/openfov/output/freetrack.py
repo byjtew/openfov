@@ -271,7 +271,7 @@ class FreeTrackWriter:
             _CloseHandle(self._mapping_handle)
             self._mapping_handle = None
 
-    def __enter__(self) -> "FreeTrackWriter":
+    def __enter__(self) -> FreeTrackWriter:
         self.open()
         return self
 

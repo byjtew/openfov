@@ -39,7 +39,6 @@ from openfov.persistence.config import (
 )
 from openfov.ui.hotkey_widget import HotkeyButton
 
-
 _RESOLUTIONS: tuple[tuple[int, int], ...] = (
     (640, 480),
     (1280, 720),

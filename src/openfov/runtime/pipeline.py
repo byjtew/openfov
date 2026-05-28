@@ -78,7 +78,7 @@ def _bump_thread_priority(thread: threading.Thread) -> None:
             SetThreadPriority(h, THREAD_PRIORITY_ABOVE_NORMAL)
         finally:
             CloseHandle(h)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.debug("Could not raise thread priority: %s", exc)
 
 
@@ -92,7 +92,7 @@ class _FrameSlot:
     iRacing only cares about the most recent pose, not the backlog.
     """
 
-    __slots__ = ("_frame", "_lock", "_event")
+    __slots__ = ("_event", "_frame", "_lock")
 
     def __init__(self) -> None:
         self._frame: np.ndarray | None = None
@@ -167,7 +167,7 @@ class _CameraReader(threading.Thread):
             t0 = time.perf_counter()
             try:
                 ok, frame = cam.read()
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("Reader thread camera.read raised: %s", exc)
                 ok, frame = False, None
             if not ok or frame is None:
@@ -342,7 +342,7 @@ class PipelineThread(QThread):
             self._tracker.start(
                 TrackerSettings(max_inference_dim=self._inference_max_dim)
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             self._camera.close()
             self.error.emit(f"Tracker init failed: {exc}")
             return
@@ -395,7 +395,7 @@ class PipelineThread(QThread):
         # Snapshot the writer's commit/drop counters so we can compute
         # the *delta* per 5-second diagnostic window — gives the user
         # the actual write rate, separate from inference rate.
-        ft_writer = self._output._writer  # noqa: SLF001 — internal stable
+        ft_writer = self._output._writer
         last_commits = ft_writer.writes_committed
         last_drops = ft_writer.writes_dropped
 
@@ -412,7 +412,7 @@ class PipelineThread(QThread):
                         # never kill the pipeline thread.
                         try:
                             opened = self._camera.open()
-                        except Exception as exc:  # noqa: BLE001
+                        except Exception as exc:
                             logger.warning(
                                 "Camera reopen attempt raised: %s — will retry",
                                 exc,
@@ -485,7 +485,7 @@ class PipelineThread(QThread):
                 ts_ms = int((time.monotonic() - t0) * 1000)
                 try:
                     result = self._tracker.step(frame, ts_ms)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     # A single bad frame (corrupt buffer, transient
                     # MediaPipe hiccup) shouldn't kill the worker. Log
                     # once per second at most, then continue.
@@ -589,7 +589,7 @@ class PipelineThread(QThread):
                     self._last_ui_emit_at = now
                     self.frame_ready.emit(frame, result.landmarks_2d)
                     self.pose_ready.emit(raw_pose, mapped_pose, stats)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.exception("Pipeline thread crashed")
             self.error.emit(f"Pipeline error: {exc}")
         finally:

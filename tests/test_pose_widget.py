@@ -28,7 +28,10 @@ def qapp() -> object:
 def test_face_geometry_present() -> None:
     """Smiley disc + eyes + smile vertex sets are built at import time."""
     from openfov.ui.pose_widget import (
-        _FACE_VERTS, _LEFT_EYE_VERTS, _RIGHT_EYE_VERTS, _SMILE_VERTS,
+        _FACE_VERTS,
+        _LEFT_EYE_VERTS,
+        _RIGHT_EYE_VERTS,
+        _SMILE_VERTS,
     )
 
     # All in the z=0 plane.
@@ -60,7 +63,7 @@ def test_rotation_matrix_yaw_pure() -> None:
     assert np.allclose(nose, np.array([1.0, 0.0, 0.0]), atol=1e-6)
 
 
-def test_paint_does_not_crash_at_extremes(qapp) -> None:  # noqa: ARG001
+def test_paint_does_not_crash_at_extremes(qapp) -> None:
     """Sweep some big poses through the widget; renderer must stay
     well-behaved (no divide-by-zero, no NaN polygons)."""
     from PySide6.QtCore import QPoint
@@ -92,7 +95,7 @@ def test_paint_does_not_crash_at_extremes(qapp) -> None:  # noqa: ARG001
         w.render(pix, QPoint(0, 0))
 
 
-def test_not_detected_state_paints_warning(qapp) -> None:  # noqa: ARG001
+def test_not_detected_state_paints_warning(qapp) -> None:
     from openfov.runtime.pipeline import PipelineStats
     from openfov.tracker.base import Pose6DOF
     from openfov.ui.pose_widget import PoseWidget

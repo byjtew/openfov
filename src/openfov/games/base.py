@@ -103,7 +103,7 @@ class GameDetector:
         while not self._stop_evt.is_set():
             try:
                 active = self.poll_once()
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("Game detector poll failed: %s", exc)
                 active = None
 
@@ -114,10 +114,10 @@ class GameDetector:
                 self._current = active
                 try:
                     self._on_change(active)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     logger.exception("on_change callback raised")
 
             self._stop_evt.wait(self._poll_interval)
 
 
-__all__ = ["GameProfile", "GameDetector"]
+__all__ = ["GameDetector", "GameProfile"]

@@ -41,8 +41,8 @@ def test_read_registry_no_op_off_windows() -> None:
         # real state. Just verify the function call doesn't raise.
         try:
             bootstrap.read_registry_path()
-        except Exception as exc:  # noqa: BLE001
-            assert False, f"read_registry_path raised on Windows: {exc}"
+        except Exception as exc:
+            raise AssertionError(f"read_registry_path raised on Windows: {exc}") from exc
     else:
         assert bootstrap.read_registry_path() is None
 

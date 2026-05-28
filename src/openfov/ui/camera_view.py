@@ -12,7 +12,7 @@ from __future__ import annotations
 import cv2
 import numpy as np
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QImage, QPainter, QPen, QPixmap, QColor
+from PySide6.QtGui import QColor, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QLabel, QSizePolicy
 
 
@@ -97,7 +97,7 @@ class CameraView(QLabel):
 
         self.setPixmap(pix)
 
-    def resizeEvent(self, event) -> None:  # noqa: D401
+    def resizeEvent(self, event) -> None:
         # Re-render so the pixmap matches the new size.
         super().resizeEvent(event)
         if self._frame is not None:

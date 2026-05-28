@@ -13,7 +13,6 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QPushButton
 
-
 # Map Qt::Key values to pynput-style key names. Only the keys real users
 # actually bind for sim apps — function keys, common modifiers, the few
 # special keys (Esc, Space, Tab, Enter). pynput accepts character keys
@@ -130,7 +129,7 @@ class HotkeyButton(QPushButton):
         self.setFocus(Qt.MouseFocusReason)
         self._refresh_label()
 
-    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: D401
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         if not self._capturing:
             super().keyPressEvent(event)
             return

@@ -29,7 +29,6 @@ from openfov.mapping.curve import CubicBezierCurve
 from openfov.ui.curve_editor import PRESETS, CurveEditor
 from openfov.ui.widgets import reset_button
 
-
 _SENS_SCALE = 100  # slider integer 0..300 -> 0.00..3.00
 _SENS_DEFAULT = 1.0
 
@@ -44,7 +43,7 @@ def _matches_preset(loaded: CubicBezierCurve, preset: CubicBezierCurve) -> bool:
     """
     if len(loaded.points) != len(preset.points):
         return False
-    for a, b in zip(loaded.points, preset.points):
+    for a, b in zip(loaded.points, preset.points, strict=False):
         if (
             abs(a.x - b.x) > 1e-3
             or abs(a.y - b.y) > 1e-3
@@ -122,7 +121,7 @@ class AxisPanel(QFrame):
             "1.00x = no scaling. Range 0.00 .. 3.00."
         )
         self._sens.valueChanged.connect(self._on_sens)
-        self._sens_value = QLabel(f"{self._settings.sensitivity:.2f}×")
+        self._sens_value = QLabel(f"{self._settings.sensitivity:.2f}x")
         self._sens_value.setMinimumWidth(52)
         self._sens_value.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
@@ -183,7 +182,7 @@ class AxisPanel(QFrame):
             self._enabled_cb.setChecked(settings.enabled)
             self._invert.setChecked(settings.invert)
             self._sens.setValue(int(settings.sensitivity * _SENS_SCALE))
-            self._sens_value.setText(f"{settings.sensitivity:.2f}×")
+            self._sens_value.setText(f"{settings.sensitivity:.2f}x")
         finally:
             self.blockSignals(False)
         self._curve_editor.blockSignals(True)
@@ -235,7 +234,7 @@ class AxisPanel(QFrame):
     def _on_sens(self, raw: int) -> None:
         val = raw / _SENS_SCALE
         self._settings = replace(self._settings, sensitivity=val)
-        self._sens_value.setText(f"{val:.2f}×")
+        self._sens_value.setText(f"{val:.2f}x")
         self.changed.emit(self._axis, self._settings)
 
     @Slot(object)

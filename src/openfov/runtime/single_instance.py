@@ -21,6 +21,7 @@ Implementation notes:
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -100,10 +101,8 @@ class SingleInstanceLock:
 
         # Stamp the file with our PID so a diagnostic user can see
         # which process is holding it.
-        try:
+        with contextlib.suppress(OSError):
             os.write(self._fd, f"{os.getpid()}".encode())
-        except OSError:
-            pass
         self._acquired = True
         return True
 
@@ -121,10 +120,8 @@ class SingleInstanceLock:
                 msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
             except OSError:
                 pass
-            try:
+            with contextlib.suppress(OSError):
                 os.close(self._fd)
-            except OSError:
-                pass
             self._fd = None
         self._acquired = False
 

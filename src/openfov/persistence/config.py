@@ -2,18 +2,13 @@
 
 from __future__ import annotations
 
-import sys
-import tomli_w
+import tomllib  # type: ignore[no-redef]
 from dataclasses import dataclass
 from pathlib import Path
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:  # pragma: no cover — we require 3.11+ in pyproject
-    import tomli as tomllib  # type: ignore[no-redef]
+import tomli_w
 
 from openfov.persistence.paths import app_config_path
-
 
 # Performance presets. We hold camera FPS at the standard 30 across the
 # board — every consumer USB webcam supports it without pixel-format
@@ -58,7 +53,7 @@ PERFORMANCE_PRESETS: dict[str, dict[str, int | None]] = {
 }
 
 
-def preset_values_match(preset: str, cfg: "AppConfig") -> bool:
+def preset_values_match(preset: str, cfg: AppConfig) -> bool:
     """True if the config's perf knobs exactly match the named preset."""
     spec = PERFORMANCE_PRESETS.get(preset)
     if spec is None:
@@ -131,7 +126,7 @@ class AppConfig:
         }
 
     @classmethod
-    def from_dict(cls, raw: dict[str, object]) -> "AppConfig":
+    def from_dict(cls, raw: dict[str, object]) -> AppConfig:
         cam = raw.get("camera", {})
         ui = raw.get("ui", {})
         sysd = raw.get("system", {})

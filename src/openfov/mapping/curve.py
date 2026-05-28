@@ -15,9 +15,9 @@ the live trace at 60 Hz without a per-frame Python loop.
 
 from __future__ import annotations
 
-import math
+import itertools
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable
 
 import numpy as np
 
@@ -101,7 +101,7 @@ class CubicBezierCurve:
         if len(self.points) < 2:
             raise ValueError("CubicBezierCurve requires at least 2 points")
         xs = [p.x for p in self.points]
-        if any(b <= a for a, b in zip(xs, xs[1:])):
+        if any(b <= a for a, b in itertools.pairwise(xs)):
             raise ValueError("CubicBezierCurve points must be strictly increasing in x")
 
     @property
@@ -127,7 +127,7 @@ class CubicBezierCurve:
         result = np.empty_like(x_clamped, dtype=np.float64)
 
         # Process each segment in one batch.
-        for p0, p1 in zip(self.points, self.points[1:]):
+        for p0, p1 in zip(self.points, self.points[1:], strict=False):
             mask = (x_clamped >= p0.x) & (x_clamped <= p1.x)
             if not mask.any():
                 continue
@@ -150,7 +150,7 @@ class CubicBezierCurve:
         ]
 
     @classmethod
-    def from_list(cls, raw: list[dict[str, float]]) -> "CubicBezierCurve":
+    def from_list(cls, raw: list[dict[str, float]]) -> CubicBezierCurve:
         return cls(
             points=[
                 CurvePoint(

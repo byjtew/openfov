@@ -7,6 +7,9 @@ manager works."""
 
 from __future__ import annotations
 
+import contextlib
+from pathlib import Path
+
 from openfov.output.trackir_shim import TrackIRShim, dummy_path
 
 
@@ -57,6 +60,7 @@ def test_job_object_kills_orphan_on_parent_crash(tmp_path: Path) -> None:
     import subprocess
     import sys
     import time
+
     from openfov.output.trackir_shim import dummy_path
 
     if not dummy_path().exists() or sys.platform != "win32":
@@ -101,10 +105,8 @@ def test_job_object_kills_orphan_on_parent_crash(tmp_path: Path) -> None:
 
     # Belt-and-braces cleanup in case the guarantee failed: don't leave an
     # orphan on the CI machine.
-    try:
+    with contextlib.suppress(psutil.NoSuchProcess, psutil.AccessDenied):
         psutil.Process(spawned_pid).kill()
-    except (psutil.NoSuchProcess, psutil.AccessDenied):
-        pass
     raise AssertionError(
         f"TrackIR.exe pid={spawned_pid} survived parent crash — Job Object guarantee failed"
     )

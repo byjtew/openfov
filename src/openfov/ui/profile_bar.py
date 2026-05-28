@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtCore import Signal, Slot
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -99,7 +99,7 @@ class ProfileBar(QFrame):
         try:
             profile = load_profile(name)
             self.profile_loaded.emit(profile)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.exception("Failed to load profile %r: %s", name, exc)
 
     @Slot(str)
@@ -108,7 +108,7 @@ class ProfileBar(QFrame):
             return
         try:
             profile = load_profile(name)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             QMessageBox.warning(self, "Profile error", f"Could not load {name!r}: {exc}")
             return
         self.profile_loaded.emit(profile)
@@ -121,13 +121,12 @@ class ProfileBar(QFrame):
         if not ok or not new_name.strip():
             return
         new_name = new_name.strip()
-        if new_name in list_profile_names():
-            if QMessageBox.question(
-                self, "Overwrite?",
-                f"A profile named '{new_name}' already exists. Overwrite?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
-            ) != QMessageBox.Yes:
-                return
+        if new_name in list_profile_names() and QMessageBox.question(
+            self, "Overwrite?",
+            f"A profile named '{new_name}' already exists. Overwrite?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        ) != QMessageBox.Yes:
+            return
         # Build a Profile from the current name's loaded state — main
         # window will call back via request_save with current axis state,
         # but for Save-As we just snapshot the current selection.
@@ -135,7 +134,7 @@ class ProfileBar(QFrame):
             current = load_profile(self._combo.currentText())
             current.name = new_name
             save_profile(current)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             QMessageBox.warning(self, "Save error", str(exc))
             return
         self._reload_combo(select_name=new_name)
@@ -157,7 +156,7 @@ class ProfileBar(QFrame):
             p.name = new_name
             save_profile(p)
             delete_profile(old_name)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             QMessageBox.warning(self, "Rename error", str(exc))
             return
         self._reload_combo(select_name=new_name)

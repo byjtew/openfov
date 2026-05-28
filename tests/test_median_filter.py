@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from openfov.filtering.median import MedianFilter
 
 

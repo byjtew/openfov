@@ -22,6 +22,7 @@ def qapp() -> object:
 
 def test_format_binding_function_key() -> None:
     from PySide6.QtCore import Qt
+
     from openfov.ui.hotkey_widget import _format_binding
 
     assert _format_binding(Qt.Key_F9, Qt.NoModifier) == "<f9>"
@@ -29,6 +30,7 @@ def test_format_binding_function_key() -> None:
 
 def test_format_binding_letter_lowercased() -> None:
     from PySide6.QtCore import Qt
+
     from openfov.ui.hotkey_widget import _format_binding
 
     assert _format_binding(Qt.Key_R, Qt.NoModifier) == "r"
@@ -36,6 +38,7 @@ def test_format_binding_letter_lowercased() -> None:
 
 def test_format_binding_with_modifiers() -> None:
     from PySide6.QtCore import Qt
+
     from openfov.ui.hotkey_widget import _format_binding
 
     binding = _format_binding(
@@ -46,6 +49,7 @@ def test_format_binding_with_modifiers() -> None:
 
 def test_format_binding_modifier_only_returns_none() -> None:
     from PySide6.QtCore import Qt
+
     from openfov.ui.hotkey_widget import _format_binding
 
     assert _format_binding(Qt.Key_Control, Qt.ControlModifier) is None
@@ -54,6 +58,7 @@ def test_format_binding_modifier_only_returns_none() -> None:
 
 def test_format_binding_special_keys() -> None:
     from PySide6.QtCore import Qt
+
     from openfov.ui.hotkey_widget import _format_binding
 
     assert _format_binding(Qt.Key_Space, Qt.NoModifier) == "<space>"
@@ -68,7 +73,7 @@ def test_format_for_display() -> None:
     assert _format_for_display("") == "(none)"
 
 
-def test_hotkey_button_initial_label(qapp) -> None:  # noqa: ARG001
+def test_hotkey_button_initial_label(qapp) -> None:
     from openfov.ui.hotkey_widget import HotkeyButton
 
     btn = HotkeyButton(initial_binding="<f9>")
@@ -77,7 +82,7 @@ def test_hotkey_button_initial_label(qapp) -> None:  # noqa: ARG001
     assert "unbound" in btn2.text().lower()
 
 
-def test_hotkey_button_clear(qapp) -> None:  # noqa: ARG001
+def test_hotkey_button_clear(qapp) -> None:
     from openfov.ui.hotkey_widget import HotkeyButton
 
     captures: list[str] = []

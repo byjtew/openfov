@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import sys
-import tomli_w
+import tomllib  # type: ignore[no-redef]
 from dataclasses import dataclass, field
 from pathlib import Path
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:  # pragma: no cover
-    import tomli as tomllib  # type: ignore[no-redef]
+import tomli_w
 
 from openfov.filtering.pipeline import AxisFilterParams
 from openfov.mapping.axis_mapper import AxisSettings
@@ -91,7 +87,7 @@ class Profile:
         }
 
     @classmethod
-    def from_dict(cls, raw: dict[str, object]) -> "Profile":
+    def from_dict(cls, raw: dict[str, object]) -> Profile:
         name = str(raw.get("name", "Default"))
         game_id = str(raw.get("game_id", "iracing"))
 
@@ -183,6 +179,6 @@ __all__ = [
     "delete_profile",
     "list_profile_names",
     "load_profile",
-    "save_profile",
     "sanitize_profile_name",
+    "save_profile",
 ]
