@@ -1,5 +1,11 @@
 # OpenFOV
 
+[![CI](https://github.com/epalosh/openfov/actions/workflows/ci.yml/badge.svg)](https://github.com/epalosh/openfov/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/epalosh/openfov?display_name=tag&sort=semver)](https://github.com/epalosh/openfov/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python: 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![Platform: Windows](https://img.shields.io/badge/Platform-Windows%2010%2F11-blue)](#install)
+
 Webcam head tracking for iRacing.
 One installer, one launch — head tracking working.
 

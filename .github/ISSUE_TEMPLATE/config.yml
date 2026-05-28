@@ -1,0 +1,16 @@
+# Hide the "Open a blank issue" link at the bottom of the New Issue
+# picker. Users who don't fit either template land in Discussions
+# (questions/help) or the dedicated security path instead — keeps the
+# issue tracker focused on actionable bug reports and feature requests.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Question or general help
+    url: https://github.com/epalosh/openfov/discussions/categories/q-a
+    about: Ask in Discussions if you're not sure something's a bug. Faster help, and the answer helps other users too.
+  - name: Show off your setup
+    url: https://github.com/epalosh/openfov/discussions/categories/show-and-tell
+    about: Got OpenFOV working with a specific webcam, monitor, or rig? Share what worked so others can follow.
+  - name: Security vulnerability
+    url: https://github.com/epalosh/openfov/security/advisories/new
+    about: Please report security issues privately, not as public bugs. See SECURITY.md for what's in scope.
