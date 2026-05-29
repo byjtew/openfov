@@ -17,7 +17,7 @@
     Where to write the standalone folder. Defaults to dist/.
 
 .PARAMETER Version
-    Version string baked into the exe metadata. Default 0.1.0.0.
+    Version string baked into the exe metadata. Default 0.2.0.0.
 
 .NOTES
     On CI (windows-latest), Python 3.12 + Nuitka 2.7+ should already be
@@ -30,7 +30,7 @@
 [CmdletBinding()]
 param(
     [string]$OutDir = "",
-    [string]$Version = "0.1.0.0",
+    [string]$Version = "0.2.0.0",
     [string]$PythonExe = ""
 )
 
@@ -123,6 +123,21 @@ Write-Host "  Source: $entry"
 Write-Host "  Output: $OutDir"
 Write-Host ""
 
+# MediaPipe's native runtime (libmediapipe.dll, ~27 MB) is loaded via
+# dlopen at runtime, so Nuitka's dependency scanner never sees it and
+# --include-package-data skips DLLs. Bundle it explicitly. We resolve the
+# path from the active interpreter (differs per machine / CI) rather than
+# hardcoding. Without this the standalone imports mediapipe fine but
+# throws "Could not find module libmediapipe.dll" the instant it creates
+# the FaceLandmarker -- a runtime failure a successful compile won't catch.
+$mpDir = (& $PythonExe -c "import mediapipe, os; print(os.path.dirname(mediapipe.__file__))").Trim()
+$mpDll = Join-Path $mpDir "tasks\c\libmediapipe.dll"
+if (-not (Test-Path $mpDll)) {
+    throw "libmediapipe.dll not found at '$mpDll' - mediapipe layout changed; the build would be broken."
+}
+Write-Host "  MediaPipe DLL: $mpDll"
+Write-Host ""
+
 # Nuitka args. Standalone (not onefile) - faster startup, better AV
 # reputation, cleaner Inno Setup integration.
 #
@@ -161,6 +176,13 @@ $args = @(
     "--nofollow-import-to=torch",
     "--nofollow-import-to=IPython",
     "--include-data-files=$resources\models\face_landmarker.task=face_landmarker.task",
+    "--include-data-files=$mpDll=mediapipe/tasks/c/libmediapipe.dll",
+    # NPClient64.dll + TrackIR.exe are binaries; Nuitka's --include-data-dir
+    # silently skips .dll/.exe, so include them explicitly or the installed
+    # app can't deliver tracking to iRacing (registry points at a missing
+    # DLL). Destination matches bundled_bin_dir() -> <exe>/resources/bin.
+    "--include-data-files=$resources\bin\NPClient64.dll=resources/bin/NPClient64.dll",
+    "--include-data-files=$resources\bin\TrackIR.exe=resources/bin/TrackIR.exe",
     "--include-data-dir=$resources=resources",
     "--windows-console-mode=disable",
     "--windows-icon-from-ico=$icon",

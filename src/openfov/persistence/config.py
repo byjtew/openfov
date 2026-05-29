@@ -91,8 +91,30 @@ class AppConfig:
     performance_preset: str = "performance"
     inference_max_dim: int | None = 320
 
+    # Anti-contention knobs. These are independent of the performance
+    # preset (like the resolution/downscale knobs above, but they don't
+    # participate in preset matching — a user can run any preset with or
+    # without them).
+    #
+    # OpenCV thread-pool cap for per-frame cvtColor/resize/decode. 0 means
+    # "leave OpenCV's default" (one worker per core); a small cap stops
+    # those sub-ms ops from waking a thread on every core and fighting the
+    # game everywhere. Defaults to 2 — plenty for 720p decode + a 320-px
+    # resize, and keeps the work off the rest of the cores.
+    inference_thread_cap: int = 2
+    # CPU affinity strategy. "auto" lets the OS schedule us freely.
+    # "isolate" pins the whole OpenFOV process to the top 2 logical CPUs
+    # so MediaPipe's inference pool can't spread onto the cores iRacing is
+    # using. Opt-in / experimental: it can backfire on hybrid (P/E-core)
+    # CPUs where the top logical CPUs are the slower efficiency cores.
+    cpu_affinity_mode: str = "auto"
+
     # Hotkey bindings (pynput-format keysym strings).
     hotkey_recenter: str = "<f9>"
+    # Toggle inference on/off entirely (saves CPU when off). On each
+    # toggle the in-game view is snapped back to center. Defaults to F10,
+    # next to the F9 recenter key.
+    hotkey_toggle_tracking: str = "<f10>"
     # Reserved for forward compat — pause functionality is currently
     # removed from the UI. Keeping the field so old config.toml files
     # still load cleanly and the binding can be reintroduced later.
@@ -113,6 +135,8 @@ class AppConfig:
             "performance": {
                 "preset": self.performance_preset,
                 "inference_max_dim": infer_dim,
+                "cv_thread_cap": self.inference_thread_cap,
+                "cpu_affinity": self.cpu_affinity_mode,
             },
             "ui": {
                 "show_wizard_on_next_launch": self.show_wizard_on_next_launch,
@@ -121,6 +145,7 @@ class AppConfig:
             "system": {"start_with_windows": self.start_with_windows},
             "hotkeys": {
                 "recenter": self.hotkey_recenter,
+                "toggle_tracking": self.hotkey_toggle_tracking,
                 "pause": self.hotkey_pause,
             },
         }
@@ -142,6 +167,14 @@ class AppConfig:
         )
         infer_dim: int | None = infer_raw if infer_raw > 0 else None
 
+        # Anti-contention knobs. Negative caps are clamped to 0 (= auto);
+        # an unrecognized affinity string falls back to "auto" so a typo in
+        # a hand-edited TOML can't put us in an unknown mode.
+        cap_raw = int(perf.get("cv_thread_cap", 2)) if isinstance(perf, dict) else 2
+        affinity = str(perf.get("cpu_affinity", "auto")) if isinstance(perf, dict) else "auto"
+        if affinity not in ("auto", "isolate"):
+            affinity = "auto"
+
         return cls(
             last_profile=str(raw.get("last_profile", "Default")),
             camera_index=int(cam.get("index", 0)) if isinstance(cam, dict) else 0,
@@ -151,6 +184,8 @@ class AppConfig:
                 str(perf.get("preset", "balanced")) if isinstance(perf, dict) else "balanced"
             ),
             inference_max_dim=infer_dim,
+            inference_thread_cap=max(0, cap_raw),
+            cpu_affinity_mode=affinity,
             show_wizard_on_next_launch=(
                 bool(ui.get("show_wizard_on_next_launch", True))
                 if isinstance(ui, dict)
@@ -163,6 +198,9 @@ class AppConfig:
                 bool(sysd.get("start_with_windows", False)) if isinstance(sysd, dict) else False
             ),
             hotkey_recenter=str(hk.get("recenter", "<f9>")) if isinstance(hk, dict) else "<f9>",
+            hotkey_toggle_tracking=(
+                str(hk.get("toggle_tracking", "<f10>")) if isinstance(hk, dict) else "<f10>"
+            ),
             hotkey_pause=str(hk.get("pause", "")) if isinstance(hk, dict) else "",
         )
 

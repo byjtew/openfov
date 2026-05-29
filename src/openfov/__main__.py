@@ -146,13 +146,19 @@ def _run_gui(camera_index: int | None) -> int:
         # is slightly more CPU heat during sessions — the kernel + audio
         # services still get priority over us.
         try:
-            import ctypes
-            HIGH_PRIORITY_CLASS = 0x00000080
-            handle = ctypes.windll.kernel32.GetCurrentProcess()
-            ok = ctypes.windll.kernel32.SetPriorityClass(handle, HIGH_PRIORITY_CLASS)
-            if not ok:
-                logger.debug("SetPriorityClass(HIGH) returned 0")
-        except (OSError, AttributeError) as exc:
+            # Use psutil (already a dependency) instead of raw ctypes. The
+            # previous ctypes path called SetPriorityClass without setting
+            # restype/argtypes, so on 64-bit Windows the GetCurrentProcess
+            # pseudo-handle was marshalled as a 32-bit int and the call
+            # failed silently ("SetPriorityClass(HIGH) returned 0") — we
+            # never actually ran at HIGH, which is exactly the priority
+            # bump meant to win scheduler contests against iRacing. psutil
+            # sets the priority class correctly and reports failures.
+            import psutil
+
+            psutil.Process().nice(psutil.HIGH_PRIORITY_CLASS)
+            logger.debug("Process priority class set to HIGH")
+        except Exception as exc:
             logger.debug("Could not raise process priority: %s", exc)
 
     app = QApplication(sys.argv)
@@ -223,6 +229,8 @@ def _run_gui(camera_index: int | None) -> int:
         camera_width=config.camera_width,
         camera_height=config.camera_height,
         inference_max_dim=config.inference_max_dim,
+        cv_thread_cap=config.inference_thread_cap,
+        cpu_affinity_mode=config.cpu_affinity_mode,
     )
     window.attach_pipeline(pipeline)
 
@@ -246,6 +254,12 @@ def _run_gui(camera_index: int | None) -> int:
     hotkey_recenter = GlobalHotkey(key=config.hotkey_recenter)
     hotkey_recenter.activated.connect(pipeline.request_recenter, Qt.QueuedConnection)
     hotkey_recenter.start()
+
+    # Toggle inference on/off entirely. The pipeline centers the in-game
+    # view on each toggle and skips MediaPipe while off.
+    hotkey_toggle = GlobalHotkey(key=config.hotkey_toggle_tracking)
+    hotkey_toggle.activated.connect(pipeline.toggle_tracking, Qt.QueuedConnection)
+    hotkey_toggle.start()
 
     # ---- Menu hookups ----
 
@@ -275,16 +289,23 @@ def _run_gui(camera_index: int | None) -> int:
                 new_cfg.camera_width != config.camera_width
                 or new_cfg.camera_height != config.camera_height
                 or new_cfg.inference_max_dim != config.inference_max_dim
+                or new_cfg.inference_thread_cap != config.inference_thread_cap
+                or new_cfg.cpu_affinity_mode != config.cpu_affinity_mode
             )
             config.camera_width = new_cfg.camera_width
             config.camera_height = new_cfg.camera_height
             config.performance_preset = new_cfg.performance_preset
             config.inference_max_dim = new_cfg.inference_max_dim
+            config.inference_thread_cap = new_cfg.inference_thread_cap
+            config.cpu_affinity_mode = new_cfg.cpu_affinity_mode
 
             # Live-apply hotkey changes.
             if new_cfg.hotkey_recenter != config.hotkey_recenter:
                 hotkey_recenter.set_binding(new_cfg.hotkey_recenter)
                 config.hotkey_recenter = new_cfg.hotkey_recenter
+            if new_cfg.hotkey_toggle_tracking != config.hotkey_toggle_tracking:
+                hotkey_toggle.set_binding(new_cfg.hotkey_toggle_tracking)
+                config.hotkey_toggle_tracking = new_cfg.hotkey_toggle_tracking
             save_app_config(config)
 
             if needs_restart:
@@ -320,6 +341,7 @@ def _run_gui(camera_index: int | None) -> int:
     def _shutdown() -> None:
         watcher.stop()
         hotkey_recenter.stop()
+        hotkey_toggle.stop()
         pipeline.stop()
         pipeline.wait(2000)
         # Save current profile + config so the next launch picks up where

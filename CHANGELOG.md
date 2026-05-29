@@ -3,6 +3,51 @@
 All notable changes to OpenFOV are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.0] — Head-tracking feel + game-contention performance
+
+### Added
+- Global hotkey (default **F10**) to toggle inference on/off entirely.
+  Disabling stops MediaPipe (frees CPU) and snaps the in-game view to
+  center; re-enabling resumes from the **last calibration** (no recenter).
+  Rebindable in Settings → Hotkeys.
+- **Pause preview** button — stops the camera-preview rendering (a
+  diagnostic to measure its CPU cost) while tracking and the fps/inference
+  readout keep running.
+- CPU-contention controls so tracking holds up while a game saturates the
+  CPU:
+  - Window-visibility gating — preview frames + pose updates are skipped
+    while the window is minimized / hidden to tray (tracking + game output
+    continue).
+  - OpenCV thread-pool cap (default 2) on the per-frame cvtColor / resize /
+    decode work.
+  - Optional **Reserve CPU cores** mode (Settings → Performance) pinning the
+    process to the top logical CPUs so MediaPipe stays off the game's
+    cores. Off by default; experimental.
+
+### Changed
+- Default yaw mapping is now the **soft-center curve at 3x sensitivity**
+  (fine control near forward view, fast swing to the apex). Pitch and roll
+  keep the gentle linear default.
+- Sensitivity sliders now range **0–5x** (was 0–3x).
+- Settings → Performance simplified — the raw "inference downscale" spinbox
+  is gone (driven by the preset), and the OpenCV thread cap is not
+  surfaced.
+- Camera preview shows an explicit **"tracking disabled"** banner when
+  inference is toggled off, instead of the misleading "no face detected".
+- Reworded a setup-wizard tip ("Constant motion can be disorienting!").
+
+### Fixed
+- Process priority was never actually raised to HIGH on 64-bit Windows —
+  the `ctypes` `SetPriorityClass` call mis-marshalled the process handle
+  and failed silently. Now set via `psutil`, so OpenFOV runs at HIGH and
+  stops losing scheduler contests with the game's render thread.
+- Shutdown crash (`'Event' object is not callable`): the camera-reader
+  thread's stop Event shadowed `threading.Thread._stop`, so every exit
+  threw and skipped pipeline cleanup. Renamed the attribute.
+
+### Tests
+- **Full suite: 158/158 passing.**
+
 ## [0.1.0] — First public release
 
 ### Added

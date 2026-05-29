@@ -65,6 +65,15 @@ class TrackerSettings:
     # resolution."
     max_inference_dim: int | None = None
 
+    # Cap on OpenCV's internal thread pool (cv2.setNumThreads). The
+    # per-frame cvtColor + resize (and MJPG decode in the camera reader)
+    # are sub-millisecond on small frames, but OpenCV defaults to one
+    # worker per core and will wake a thread on every core for that tiny
+    # work — contending with the game across all of them. A small cap
+    # keeps that off the game's cores. 0 leaves OpenCV's default
+    # untouched (used by the wizard + CI, where contention is moot).
+    cv_thread_cap: int = 0
+
 
 class Tracker(ABC):
     """Abstract tracker. Concrete subclasses must be safe to use from the

@@ -651,7 +651,7 @@ class _HeadsUpPage(QWizardPage):
             "<li><b>Don't overuse it.</b> Keep your head still by "
             "default — only move when you need to (apex/exit, "
             "wheel-to-wheel battles, learning new tracks). Constant "
-            "motion makes it worse.</li>"
+            "motion can be disorienting!</li>"
             "<li><b>Tune for your setup.</b> The defaults are a "
             "starting point — adjust sensitivity and filters until "
             "your movements feel right for your monitor distance.</li>"

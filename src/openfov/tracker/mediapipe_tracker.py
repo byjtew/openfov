@@ -99,6 +99,14 @@ class MediaPipeTracker(Tracker):
     def start(self, settings: TrackerSettings) -> None:
         if self._landmarker is not None:
             return
+        # Cap OpenCV's thread pool before any cvtColor/resize runs. This is
+        # process-global; we set it here (rather than once at import) so the
+        # value tracks the user's setting and the wizard/CI paths that pass
+        # the default (0) leave OpenCV alone. MediaPipe's own TFLite/XNNPACK
+        # pool isn't reachable from the Tasks API — CPU affinity (set by the
+        # pipeline) is what bounds that one.
+        if settings.cv_thread_cap > 0:
+            cv2.setNumThreads(settings.cv_thread_cap)
         model_path = Path(settings.model_path) if settings.model_path else _default_model_path()
         if not model_path.exists():
             # The model is bundled by the installer. If a user sees this

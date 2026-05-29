@@ -76,11 +76,30 @@ def test_profile_default_shape() -> None:
     assert p.axes["x"].enabled is False
     assert p.axes["y"].enabled is False
     assert p.axes["z"].enabled is False
-    # Sensitivity defaults to 0.75 — slightly below 1:1 so first-time
-    # users don't over-rotate.
-    assert p.axes["yaw"].sensitivity == pytest.approx(0.75)
+    # Yaw ships with soft-center + 3x sensitivity (fine control near
+    # forward view, fast swing at the edges); pitch/roll keep the gentle
+    # 0.75 linear default so they feel tame when enabled.
+    assert p.axes["yaw"].sensitivity == pytest.approx(3.0)
     assert p.axes["pitch"].sensitivity == pytest.approx(0.75)
     assert p.axes["roll"].sensitivity == pytest.approx(0.75)
+    # Soft-center is shallow near zero, so for a small input its output is
+    # below the linear (pitch) response — confirms yaw got the soft curve.
+    assert p.axes["yaw"].curve(10.0) < p.axes["pitch"].curve(10.0)
+
+
+def test_app_config_toggle_hotkey_default() -> None:
+    from openfov.persistence.config import AppConfig
+
+    assert AppConfig().hotkey_toggle_tracking == "<f10>"
+
+
+def test_app_config_toggle_hotkey_roundtrip(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("OPENFOV_APPDATA", str(tmp_path))
+    from openfov.persistence.config import AppConfig, load_app_config, save_app_config
+
+    cfg = AppConfig(hotkey_toggle_tracking="<f7>")
+    save_app_config(cfg)
+    assert load_app_config().hotkey_toggle_tracking == "<f7>"
 
 
 def test_profile_enabled_field_roundtrip(monkeypatch, tmp_path) -> None:

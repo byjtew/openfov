@@ -29,7 +29,7 @@ from openfov.mapping.curve import CubicBezierCurve
 from openfov.ui.curve_editor import PRESETS, CurveEditor
 from openfov.ui.widgets import reset_button
 
-_SENS_SCALE = 100  # slider integer 0..300 -> 0.00..3.00
+_SENS_SCALE = 100  # slider integer 0..500 -> 0.00..5.00
 _SENS_DEFAULT = 1.0
 
 
@@ -112,7 +112,7 @@ class AxisPanel(QFrame):
         sens_label_widget.setMinimumWidth(78)
         self._sens = QSlider(Qt.Horizontal)
         self._sens.setMinimum(0)
-        self._sens.setMaximum(3 * _SENS_SCALE)
+        self._sens.setMaximum(5 * _SENS_SCALE)
         self._sens.setValue(int(self._settings.sensitivity * _SENS_SCALE))
         self._sens.setSingleStep(1)
         self._sens.setPageStep(10)
