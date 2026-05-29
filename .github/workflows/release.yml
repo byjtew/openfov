@@ -158,8 +158,14 @@ jobs:
     name: VirusTotal scan
     needs: build
     runs-on: ubuntu-latest
-    if: secrets.VT_API_KEY != ''
     timeout-minutes: 15
+    # Do NOT gate this job with `if: secrets.VT_API_KEY != ''` -- the
+    # `secrets` context is not allowed in `if:` conditions, which makes the
+    # ENTIRE workflow file invalid (it parses to 0 jobs and every run fails
+    # before anything builds). Expose the key as env and gate the step
+    # instead; `env` IS allowed in a step-level `if`.
+    env:
+      VT_API_KEY: ${{ secrets.VT_API_KEY }}
 
     steps:
       - name: Download installer
@@ -169,9 +175,10 @@ jobs:
           path: artifact
 
       - name: Scan via VirusTotal
+        if: env.VT_API_KEY != ''
         uses: crazy-max/ghaction-virustotal@v4
         with:
-          vt_api_key: ${{ secrets.VT_API_KEY }}
+          vt_api_key: ${{ env.VT_API_KEY }}
           files: |
             artifact/*.exe
 
