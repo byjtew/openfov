@@ -7,7 +7,6 @@
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows%2010%2F11-blue)](#install)
 
 Webcam head tracking for iRacing.
-One installer, one launch — head tracking working.
 
 ## Install
 
