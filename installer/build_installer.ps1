@@ -26,14 +26,14 @@
 
 .PARAMETER Version
     Version string passed to Inno Setup via /DMyAppVersion. Defaults to
-    0.2.0 -- keep in sync with pyproject.toml [project.version].
+    0.2.1 -- keep in sync with pyproject.toml [project.version].
 #>
 
 [CmdletBinding()]
 param(
     [string]$ISCC = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
     [switch]$SkipRedistDownload,
-    [string]$Version = "0.2.0"
+    [string]$Version = "0.2.1"
 )
 
 $ErrorActionPreference = "Stop"

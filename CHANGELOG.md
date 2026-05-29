@@ -3,7 +3,12 @@
 All notable changes to OpenFOV are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.2.0] — Head-tracking feel + game-contention performance
+## [0.2.1] — Head-tracking feel + game-contention performance
+
+> First build actually published by CI. v0.2.0 was tagged but never
+> shipped: the release workflow used `secrets` in a job `if:` condition,
+> which GitHub rejects, so the file never parsed and no installer was ever
+> built. Fixed in this release.
 
 ### Added
 - Global hotkey (default **F10**) to toggle inference on/off entirely.
