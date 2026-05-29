@@ -27,7 +27,13 @@ jobs:
   build:
     name: Build installer
     runs-on: windows-latest
-    timeout-minutes: 30
+    # Cold Nuitka standalone build (MediaPipe + OpenCV + Qt, no ccache on a
+    # fresh runner) runs ~30-40 min on a 4-vCPU runner — the v0.2.1 run was
+    # cancelled at the old 30 min mid-Nuitka. Set to GitHub's per-job max
+    # (360 min / 6h, the hosted-runner hard ceiling) so a slow cold build
+    # is never cut off; a healthy run stops the moment it finishes, so the
+    # high ceiling costs nothing.
+    timeout-minutes: 360
     outputs:
       installer_name: ${{ steps.installer.outputs.name }}
       version: ${{ steps.version.outputs.version }}
