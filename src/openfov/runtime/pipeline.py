@@ -17,6 +17,7 @@ state — no Qt slot wiring required.
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import threading
 import time
@@ -80,6 +81,66 @@ def _bump_thread_priority(thread: threading.Thread) -> None:
             CloseHandle(h)
     except Exception as exc:
         logger.debug("Could not raise thread priority: %s", exc)
+
+
+def _isolate_process_to_high_cores(reserved: int = 2) -> None:
+    """Pin the entire OpenFOV process to the top `reserved` logical CPUs.
+
+    Why the whole process and not just this thread: on Windows a new
+    thread inherits the *process* affinity mask, not its creator's. The
+    cost is in MediaPipe's TFLite/XNNPACK worker pool, whose threads we
+    don't create or control — only a process-level mask reliably keeps
+    them off the cores iRacing is hammering. The Qt UI is idle during
+    gameplay, so confining it to the same two cores costs nothing.
+
+    Heuristic + caveats: we reserve the highest-numbered logical CPUs on
+    the theory that schedulers and games tend to weight lower-numbered
+    ones. This is imperfect — on Intel hybrid (P/E-core) parts the top
+    logical CPUs are often the slower efficiency cores, which can make
+    inference *worse*. That's why this is opt-in. We bail on machines
+    with too few cores to spare (would just starve us) or with >64
+    logical CPUs (those span Windows processor groups, which a single
+    affinity mask can't address). Best-effort: any failure is logged at
+    debug and the process keeps its default (unpinned) scheduling."""
+    if sys.platform != "win32":
+        return
+    n = os.cpu_count() or 0
+    if n < 6:
+        logger.info(
+            "CPU affinity 'isolate' skipped: %d logical CPUs is too few to "
+            "spare without starving the tracker; leaving it to the OS.", n,
+        )
+        return
+    if n > 64:
+        logger.info(
+            "CPU affinity 'isolate' skipped: %d logical CPUs span processor "
+            "groups, which a single mask can't address.", n,
+        )
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        mask = 0
+        for i in range(n - reserved, n):
+            mask |= 1 << i
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+        SetProcessAffinityMask = kernel32.SetProcessAffinityMask
+        # DWORD_PTR is pointer-sized (64-bit on x64); c_size_t matches it.
+        SetProcessAffinityMask.argtypes = [wintypes.HANDLE, ctypes.c_size_t]
+        SetProcessAffinityMask.restype = wintypes.BOOL
+        if not SetProcessAffinityMask(kernel32.GetCurrentProcess(), mask):
+            logger.debug(
+                "SetProcessAffinityMask failed (err=%d)", ctypes.get_last_error()
+            )
+        else:
+            logger.info(
+                "CPU affinity: pinned OpenFOV to logical CPUs %d-%d (mask=0x%x)",
+                n - reserved, n - 1, mask,
+            )
+    except Exception as exc:
+        logger.debug("Could not set CPU affinity: %s", exc)
 
 
 class _FrameSlot:
@@ -150,7 +211,11 @@ class _CameraReader(threading.Thread):
         super().__init__(name="OpenFOV-CameraReader", daemon=True)
         self._get_camera = get_camera
         self._slot = slot
-        self._stop = stop_event
+        # NB: must NOT be named `_stop` — that shadows threading.Thread._stop,
+        # an internal method join()/_wait_for_tstate_lock() calls during
+        # teardown. Shadowing it with an Event made every shutdown raise
+        # "'Event' object is not callable" and skip the rest of cleanup.
+        self._stop_event = stop_event
         # Main thread reads these for hot-plug detection + perf telemetry.
         # No lock — int reads/writes are atomic in CPython; a stale value
         # by one frame doesn't matter for either use case.
@@ -158,11 +223,11 @@ class _CameraReader(threading.Thread):
         self.last_read_ms = 0.0
 
     def run(self) -> None:
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             cam = self._get_camera()
             if cam is None or not cam.is_open:
                 # Wait for the main thread to reopen the device.
-                self._stop.wait(0.05)
+                self._stop_event.wait(0.05)
                 continue
             t0 = time.perf_counter()
             try:
@@ -173,7 +238,7 @@ class _CameraReader(threading.Thread):
             if not ok or frame is None:
                 self.consecutive_fails += 1
                 # Tiny back-off so we don't spin if the device is dead.
-                self._stop.wait(0.005)
+                self._stop_event.wait(0.005)
                 continue
             self.consecutive_fails = 0
             self.last_read_ms = (time.perf_counter() - t0) * 1000.0
@@ -186,6 +251,9 @@ class PipelineStats:
     inference_ms: float = 0.0
     detected: bool = False
     camera_connected: bool = True
+    # False when the user has toggled inference off via the hotkey. The UI
+    # uses this to show a "tracking disabled" state instead of "searching".
+    tracking_enabled: bool = True
 
     # Per-stage timings (rolling average, ms). Surfaced for the
     # "where is my time going?" diagnostic question. With pipelining,
@@ -245,6 +313,8 @@ class PipelineThread(QThread):
         camera_width: int = 1280,
         camera_height: int = 720,
         inference_max_dim: int | None = None,
+        cv_thread_cap: int = 0,
+        cpu_affinity_mode: str = "auto",
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -252,6 +322,8 @@ class PipelineThread(QThread):
         self._output = output
         self._camera = CameraSource(index=camera_index, width=camera_width, height=camera_height)
         self._inference_max_dim = inference_max_dim
+        self._cv_thread_cap = cv_thread_cap
+        self._cpu_affinity_mode = cpu_affinity_mode
 
         self._filters = PerAxisFilters()
         self._mapper = AxisMapper()
@@ -261,6 +333,11 @@ class PipelineThread(QThread):
         self._recenter_requested = False
         self._paused = False
         self._running = False
+        # Master inference on/off (hotkey-toggled). When off we skip
+        # MediaPipe entirely and hold the game view centered. `_prev`
+        # lets the run loop detect the edge and react once.
+        self._tracking_enabled = True
+        self._tracking_enabled_prev = True
 
         # Optional game-output profile. None means write to FT_SharedMem
         # with GameID=0 (game-agnostic).
@@ -274,6 +351,18 @@ class PipelineThread(QThread):
 
         # UI emit throttle state.
         self._last_ui_emit_at = 0.0
+        # When False (window minimized / hidden to tray), we skip the
+        # frame + pose emits entirely. The output write to iRacing is
+        # unaffected — tracking keeps running; we just stop shipping
+        # 2.8 MB preview frames and pose updates to a UI no one can see.
+        # Plain bool; reads/writes are atomic in CPython so no lock is
+        # needed (same convention as _paused).
+        self._ui_active = True
+        # Narrower gate for *just* the camera preview frame (the expensive
+        # emit). The "Pause preview" button toggles this while leaving
+        # pose_ready flowing, so the fps/inference readout keeps updating
+        # and the user can watch the preview's CPU cost in real time.
+        self._preview_active = True
 
     # -- thread-safe control surface ----------------------------------
 
@@ -293,6 +382,34 @@ class PipelineThread(QThread):
 
     def set_paused(self, paused: bool) -> None:
         self._paused = paused
+
+    def set_tracking_enabled(self, enabled: bool) -> None:
+        """Enable/disable inference entirely. When disabled the pipeline
+        stops running MediaPipe (the CPU win) and holds the in-game view
+        centered; the run loop reacts to the edge. Thread-safe (atomic
+        bool)."""
+        self._tracking_enabled = enabled
+
+    def toggle_tracking(self) -> None:
+        """Flip inference on/off — the target of the global toggle hotkey."""
+        self._tracking_enabled = not self._tracking_enabled
+
+    def set_ui_active(self, active: bool) -> None:
+        """Tell the pipeline whether the UI is visible. When inactive
+        (window minimized or hidden to tray) the pipeline stops emitting
+        preview frames + pose updates, which removes the cross-thread
+        hand-off of 2.8 MB frames and the consumer-side cvtColor/scale/
+        paint — exactly the UI load we don't want competing with the game.
+        Tracking + output to iRacing continue regardless."""
+        self._ui_active = active
+
+    def set_preview_active(self, active: bool) -> None:
+        """Toggle only the camera *preview* emit (frame_ready). Unlike
+        set_ui_active, this leaves pose_ready (the fps/inference readout
+        and pose widgets) flowing — so the user can pause the expensive
+        preview rendering and watch the numbers respond live. Tracking +
+        output to the game are unaffected."""
+        self._preview_active = active
 
     def stop(self) -> None:
         self._running = False
@@ -338,9 +455,18 @@ class PipelineThread(QThread):
                 f"Camera {self._camera.index} not available - will retry",
             )
 
+        # Pin the process before starting the tracker so MediaPipe's
+        # TFLite/XNNPACK worker pool (created inside tracker.start) inherits
+        # the affinity mask. No-op unless the user opted into "isolate".
+        if self._cpu_affinity_mode == "isolate":
+            _isolate_process_to_high_cores()
+
         try:
             self._tracker.start(
-                TrackerSettings(max_inference_dim=self._inference_max_dim)
+                TrackerSettings(
+                    max_inference_dim=self._inference_max_dim,
+                    cv_thread_cap=self._cv_thread_cap,
+                )
             )
         except Exception as exc:
             self._camera.close()
@@ -438,17 +564,20 @@ class PipelineThread(QThread):
                                 self._MAX_RETRY_INTERVAL_S,
                             )
                     # Still no camera — emit an empty stats frame so the UI
-                    # status bar updates, then idle briefly.
-                    self.pose_ready.emit(
-                        Pose6DOF(),
-                        Pose6DOF(),
-                        PipelineStats(
-                            fps=0.0,
-                            inference_ms=last_inference_ms,
-                            detected=False,
-                            camera_connected=False,
-                        ),
-                    )
+                    # status bar updates, then idle briefly. Skip the emit
+                    # when the UI is hidden (nothing to update); on restore
+                    # the next pass refreshes status within ~80 ms.
+                    if self._ui_active:
+                        self.pose_ready.emit(
+                            Pose6DOF(),
+                            Pose6DOF(),
+                            PipelineStats(
+                                fps=0.0,
+                                inference_ms=last_inference_ms,
+                                detected=False,
+                                camera_connected=False,
+                            ),
+                        )
                     QThread.msleep(80)
                     continue
 
@@ -480,6 +609,50 @@ class PipelineThread(QThread):
                         self._last_retry_at = time.monotonic()
                     # Otherwise just spin — the reader will populate the
                     # slot soon.
+                    continue
+
+                # ---- inference enable/disable (hotkey) -----------------
+                if self._tracking_enabled != self._tracking_enabled_prev:
+                    self._tracking_enabled_prev = self._tracking_enabled
+                    # Reset only the smoothing history so the first frame
+                    # after a toggle doesn't see a huge dt. The neutral
+                    # (calibration) is deliberately left intact — re-enabling
+                    # resumes from exactly where the last calibration put
+                    # zero, rather than recentering on the current pose.
+                    # (F9 / the Calibrate button is still there to recenter.)
+                    self._filters.reset()
+                    if self._tracking_enabled:
+                        logger.info(
+                            "Inference enabled via hotkey; resuming from the "
+                            "last calibration (no recenter)"
+                        )
+                    else:
+                        logger.info(
+                            "Inference disabled via hotkey; in-game view centered"
+                        )
+
+                if not self._tracking_enabled:
+                    # Inference off — skip MediaPipe entirely (the CPU win)
+                    # and hold the in-game view centered by writing zeros
+                    # every frame (keeps FreeTrack's data fresh so iRacing
+                    # doesn't treat it as a dropped signal). Preview shows
+                    # the live camera without landmarks so the user can
+                    # re-frame before resuming.
+                    self._output.write(Pose6DOF())
+                    now = time.monotonic()
+                    if self._ui_active and (now - self._last_ui_emit_at) >= self._UI_EMIT_INTERVAL_S:
+                        self._last_ui_emit_at = now
+                        if self._preview_active:
+                            self.frame_ready.emit(frame, None)
+                        self.pose_ready.emit(
+                            Pose6DOF(),
+                            Pose6DOF(),
+                            PipelineStats(
+                                detected=False,
+                                camera_connected=True,
+                                tracking_enabled=False,
+                            ),
+                        )
                     continue
 
                 ts_ms = int((time.monotonic() - t0) * 1000)
@@ -585,9 +758,19 @@ class PipelineThread(QThread):
                 # tracker frame; the UI only needs ~30 Hz, and emitting at
                 # full inference rate (50-80 Hz) backs up the Qt event
                 # queue with 2.8 MB BGR frames the painter can't drain.
-                if (now - self._last_ui_emit_at) >= self._UI_EMIT_INTERVAL_S:
+                # Skip entirely when the UI is hidden — that's the whole
+                # point during gameplay: don't pay the cross-thread frame
+                # hand-off + consumer-side paint for a window no one sees.
+                if self._ui_active and (now - self._last_ui_emit_at) >= self._UI_EMIT_INTERVAL_S:
                     self._last_ui_emit_at = now
-                    self.frame_ready.emit(frame, result.landmarks_2d)
+                    # The camera preview frame is the expensive emit (2.8 MB
+                    # cross-thread + a cvtColor/scale/paint on the UI side).
+                    # The "Pause preview" button drops just that via
+                    # _preview_active, while pose_ready (status fps + pose
+                    # widgets) keeps flowing so the user can watch the cost
+                    # change in real time.
+                    if self._preview_active:
+                        self.frame_ready.emit(frame, result.landmarks_2d)
                     self.pose_ready.emit(raw_pose, mapped_pose, stats)
         except Exception as exc:
             logger.exception("Pipeline thread crashed")

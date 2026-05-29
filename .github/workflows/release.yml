@@ -93,11 +93,14 @@ jobs:
         id: installer
         shell: pwsh
         run: |
-          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found" }
-          & $iscc /DMyAppVersion="${{ steps.version.outputs.version }}" installer/openfov.iss
-          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
+          # Use build_installer.ps1 rather than calling iscc directly: it
+          # downloads the VC++ redist that openfov.iss bundles as a required
+          # source file (redist\vc_redist.x64.exe, gitignored). Calling iscc
+          # directly skips that download and ISCC fails on the missing file.
+          pwsh ./installer/build_installer.ps1 -Version "${{ steps.version.outputs.version }}"
+          if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
           $installer = Get-ChildItem installer/Output/OpenFOV-*-setup.exe | Select-Object -First 1
+          if (-not $installer) { throw "Installer not found in installer/Output" }
           Write-Output "name=$($installer.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "Installer: $($installer.FullName)"
           Write-Host "Size: $($installer.Length) bytes"

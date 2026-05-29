@@ -11,7 +11,7 @@ import tomli_w
 from openfov.filtering.pipeline import AxisFilterParams
 from openfov.mapping.axis_mapper import AxisSettings
 from openfov.mapping.curve import CubicBezierCurve
-from openfov.mapping.presets import linear
+from openfov.mapping.presets import linear, soft_center
 from openfov.persistence.paths import profile_path, profiles_dir, sanitize_profile_name
 
 _AXES: tuple[str, ...] = ("yaw", "pitch", "roll", "x", "y", "z")
@@ -29,14 +29,15 @@ def _default_axis_settings() -> dict[str, AxisSettings]:
     always want yaw first (looking left/right to apex) and find pitch +
     roll disorienting before they've adjusted to head-tracking.
 
-    Sensitivity defaults to 0.75 across the board — slightly below 1:1
-    so small head movements don't over-rotate the in-game camera. Users
-    can crank it up per-axis once they've found their preferred feel.
+    Yaw ships with the soft-center curve and 3x sensitivity: fine control
+    near forward view (shallow slope at zero) with a fast swing to the
+    apex on bigger head turns. Pitch and roll keep the gentle 0.75 linear
+    default so they feel tame if a user enables them.
 
     Translation axes are structurally disabled until v2 adds proper
     XYZ support (the AxisMapper short-circuits to 0 when enabled=False)."""
     return {
-        "yaw":   AxisSettings(invert=True, sensitivity=0.75, curve=linear(domain=90.0), clamp_deg=90.0, enabled=True),
+        "yaw":   AxisSettings(invert=True, sensitivity=3.0, curve=soft_center(domain=90.0), clamp_deg=90.0, enabled=True),
         "pitch": AxisSettings(invert=True, sensitivity=0.75, curve=linear(domain=90.0), clamp_deg=90.0, enabled=False),
         "roll":  AxisSettings(invert=True, sensitivity=0.75, curve=linear(domain=90.0), clamp_deg=90.0, enabled=False),
         "x": AxisSettings(invert=True, sensitivity=0.75, curve=linear(domain=200.0), clamp_deg=0.0, enabled=False),

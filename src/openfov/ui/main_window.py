@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtCore import QEvent, Qt, Signal, Slot
 from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtWidgets import (
     QComboBox,
@@ -78,6 +78,9 @@ class MainWindow(QMainWindow):
         self._profile = initial_profile
         self._allow_close = False
         self._always_on_top_initial = always_on_top
+        # Manual "Pause preview" toggle (a diagnostic to measure the
+        # preview's CPU cost). Independent of window visibility gating.
+        self._preview_paused = False
 
         # ------------------------------------------------------------------
         # Profile bar — moves *under* the camera preview so the profile
@@ -103,12 +106,26 @@ class MainWindow(QMainWindow):
         )
         self._btn_calibrate.clicked.connect(self.request_recenter.emit)
 
+        # Diagnostic toggle: stop repainting the preview to see what the
+        # camera view costs the tracking loop. Tracking + game output keep
+        # running and the fps/inference readout keeps updating, so the
+        # effect is visible immediately in the status bar.
+        self._btn_pause_preview = QPushButton("Pause preview")
+        self._btn_pause_preview.setCheckable(True)
+        self._btn_pause_preview.setToolTip(
+            "Stop repainting the camera preview to measure its CPU cost.\n"
+            "Tracking and output to your game keep running; watch the fps /\n"
+            "inference readout in the status bar respond."
+        )
+        self._btn_pause_preview.toggled.connect(self._on_pause_preview)
+
         camera_row = QHBoxLayout()
         camera_row.setContentsMargins(0, 0, 0, 0)
         camera_row.addWidget(QLabel("Camera:"))
         camera_row.addWidget(self._camera_combo, 1)
         camera_row.addSpacing(10)
         camera_row.addWidget(self._btn_calibrate)
+        camera_row.addWidget(self._btn_pause_preview)
 
         # ------------------------------------------------------------------
         # Left column: camera dropdown -> preview -> profile bar
@@ -299,6 +316,11 @@ class MainWindow(QMainWindow):
         # Reapply current settings now that the pipeline exists.
         self._push_profile_to_pipeline(pipeline)
         self._pipeline = pipeline  # type: ignore[attr-defined]
+        # Seed the pipeline's UI-active state to match our current
+        # visibility. We're not shown yet at attach time, so this starts
+        # False; the showEvent fired by window.show() flips it True.
+        self._sync_pipeline_ui_active()
+        pipeline.set_preview_active(not self._preview_paused)
 
     # ------------------------------------------------------------------
     # Profile sync
@@ -359,6 +381,10 @@ class MainWindow(QMainWindow):
     def _on_pose(
         self, raw: Pose6DOF, mapped: Pose6DOF, stats: PipelineStats
     ) -> None:
+        # Keep the preview's banner in sync with the hotkey on/off state so
+        # a disabled, still-live preview doesn't read as "no face detected".
+        self._camera_view.set_tracking_disabled(not stats.tracking_enabled)
+
         # Push the live dot into each axis's curve editor — raw input vs
         # mapped output, both in degrees. The mapper applies sensitivity
         # *before* the curve, so the dot's x corresponds to the curve's
@@ -381,6 +407,10 @@ class MainWindow(QMainWindow):
             # The camera_status slot owns the disconnected message; here
             # just show fps/inference status (which is 0/0 when disconnected).
             self.statusBar().showMessage("camera offline")
+        elif not stats.tracking_enabled:
+            self.statusBar().showMessage(
+                "tracking disabled — view centered (press the toggle hotkey to resume)"
+            )
         else:
             self.statusBar().showMessage(
                 f"{stats.fps:4.1f} fps  •  {stats.inference_ms:.1f} ms  •  "
@@ -447,6 +477,48 @@ class MainWindow(QMainWindow):
     # state, releases the single-instance lock, and *then* re-closes the
     # window with `_allow_close = True` — second call here accepts the
     # event and the QApplication exits.
+
+    # ------------------------------------------------------------------
+    # Visibility → pipeline UI-load gating
+    # ------------------------------------------------------------------
+    # When the window is minimized or hidden to tray, the pipeline has no
+    # reason to ship preview frames or pose updates. We translate Qt
+    # show/hide/minimize transitions into pipeline.set_ui_active() so the
+    # tracking loop sheds that UI load exactly while the game is in front.
+
+    def _sync_pipeline_ui_active(self) -> None:
+        pipeline = getattr(self, "_pipeline", None)
+        if pipeline is None:
+            return
+        # A minimized window is still "visible" in Qt's sense, so check
+        # both: active means on-screen AND not minimized.
+        pipeline.set_ui_active(self.isVisible() and not self.isMinimized())
+
+    @Slot(bool)
+    def _on_pause_preview(self, paused: bool) -> None:
+        self._preview_paused = paused
+        self._btn_pause_preview.setText("Resume preview" if paused else "Pause preview")
+        if hasattr(self, "_pipeline"):
+            self._pipeline.set_preview_active(not paused)
+        if paused:
+            self._camera_view.show_idle("preview paused\ntracking + output still running")
+        self.statusBar().showMessage(
+            "preview paused - tracking still running" if paused else "preview resumed",
+            3000,
+        )
+
+    def changeEvent(self, event: QEvent) -> None:
+        super().changeEvent(event)
+        if event.type() == QEvent.WindowStateChange:
+            self._sync_pipeline_ui_active()
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self._sync_pipeline_ui_active()
+
+    def hideEvent(self, event) -> None:
+        super().hideEvent(event)
+        self._sync_pipeline_ui_active()
 
     def allow_close(self) -> None:
         self._allow_close = True

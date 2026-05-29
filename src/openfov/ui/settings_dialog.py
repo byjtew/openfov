@@ -25,7 +25,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QSpinBox,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -44,13 +43,6 @@ _RESOLUTIONS: tuple[tuple[int, int], ...] = (
     (1280, 720),
     (1920, 1080),
 )
-
-
-# 0 in the spinbox means "native resolution, no downscale" — maps to
-# inference_max_dim=None in AppConfig. The spinbox range covers the
-# useful inference sizes; below 160 MediaPipe accuracy starts dropping.
-_INFER_DIM_MIN = 0
-_INFER_DIM_MAX = 1920
 
 
 class SettingsDialog(QDialog):
@@ -105,9 +97,9 @@ class SettingsDialog(QDialog):
         w = QWidget()
         form = QFormLayout(w)
 
-        # Preset picker. Selecting one populates resolution + inference
-        # downscale below; the user can then hand-tune (which flips the
-        # preset to "Custom").
+        # Preset picker. Selecting one populates the resolution below and
+        # carries the matching inference downscale internally; changing the
+        # resolution flips the preset to "Custom".
         self._preset = QComboBox()
         self._preset.addItem("Performance (low-end CPU)", "performance")
         self._preset.addItem("Balanced (recommended)", "balanced")
@@ -131,34 +123,53 @@ class SettingsDialog(QDialog):
                 self._resolution.setCurrentIndex(self._resolution.count() - 1)
         form.addRow("Capture resolution", self._resolution)
 
-        # Inference downscale. 0 = native resolution.
-        self._infer_dim = QSpinBox()
-        self._infer_dim.setRange(_INFER_DIM_MIN, _INFER_DIM_MAX)
-        self._infer_dim.setSingleStep(16)
-        self._infer_dim.setSuffix(" px")
-        self._infer_dim.setSpecialValueText("Native (no downscale)")
-        self._infer_dim.setValue(
-            self._config.inference_max_dim if self._config.inference_max_dim else 0
-        )
-        form.addRow("Inference downscale", self._infer_dim)
+        # Inference downscale is driven by the preset (Performance /
+        # Balanced / Quality map to progressively larger inference inputs)
+        # and is no longer a user-facing control. Carry the current value
+        # here so the preset handler and _harvest can pass it through
+        # without a widget.
+        self._inference_max_dim = self._config.inference_max_dim
 
         note = QLabel(
             "<i>OpenFOV asks the camera for 60 fps and falls back to "
-            "whatever the device supports (typically 30 fps on older "
-            "or integrated webcams). Lower the inference downscale to "
-            "use less CPU; raise it for more stable landmarks. iRacing "
-            "receives one pose write per inference frame.</i>"
+            "whatever the device supports (typically 30 fps on older or "
+            "integrated webcams). iRacing receives one pose write per "
+            "tracked frame.</i>"
         )
         note.setWordWrap(True)
         note.setStyleSheet("color: #7a838c;")
         form.addRow(note)
 
+        # --- Game-performance knob (independent of the preset) ---
+        # This is the CPU-affinity "isolate" mode, reworded for end users.
+        # Deliberately does NOT flip the preset to "Custom" (orthogonal to
+        # resolution/downscale). The OpenCV thread cap is intentionally not
+        # surfaced here — its safe default lives in AppConfig and is rarely
+        # worth a user touching.
+        self._affinity_isolate = QCheckBox(
+            "Reserve CPU cores to reduce impact on the game"
+        )
+        self._affinity_isolate.setChecked(self._config.cpu_affinity_mode == "isolate")
+        self._affinity_isolate.setToolTip(
+            "Pins OpenFOV to a couple of CPU cores so it competes less with "
+            "your game for processor time."
+        )
+        form.addRow(self._affinity_isolate)
+
+        affinity_note = QLabel(
+            "<i>Experimental. Helps most on a busy CPU while a game is "
+            "running; on some processors it makes no difference or can "
+            "slightly hurt. Off by default. Applies on the next launch.</i>"
+        )
+        affinity_note.setWordWrap(True)
+        affinity_note.setStyleSheet("color: #7a838c;")
+        form.addRow(affinity_note)
+
         # Wire the interactions:
-        # - Preset change → snap dependent fields.
-        # - User edits a dependent field → flip preset to Custom.
+        # - Preset change → snap resolution + carry the preset's downscale.
+        # - User edits the resolution → flip preset to Custom.
         self._preset.activated.connect(self._on_preset_activated)
         self._resolution.activated.connect(self._mark_custom)
-        self._infer_dim.valueChanged.connect(self._mark_custom_from_value)
 
         return w
 
@@ -169,20 +180,18 @@ class SettingsDialog(QDialog):
         spec = PERFORMANCE_PRESETS.get(preset_id)
         if spec is None:
             return
-        # Apply the preset to the dependent fields without triggering the
-        # "mark custom" handler (we're the source of the change).
+        # Apply the preset's resolution without retriggering "mark custom";
+        # carry its inference downscale internally (no widget for it).
         self._resolution.blockSignals(True)
-        self._infer_dim.blockSignals(True)
         try:
             pair = (spec["camera_width"], spec["camera_height"])
             for i in range(self._resolution.count()):
                 if self._resolution.itemData(i) == pair:
                     self._resolution.setCurrentIndex(i)
                     break
-            self._infer_dim.setValue(spec["inference_max_dim"] or 0)
         finally:
             self._resolution.blockSignals(False)
-            self._infer_dim.blockSignals(False)
+        self._inference_max_dim = spec["inference_max_dim"]
 
     def _mark_custom(self, _idx: int = 0) -> None:
         # Find the "custom" entry and select it.
@@ -190,9 +199,6 @@ class SettingsDialog(QDialog):
             if self._preset.itemData(i) == "custom":
                 self._preset.setCurrentIndex(i)
                 return
-
-    def _mark_custom_from_value(self, _v: int) -> None:
-        self._mark_custom()
 
     # ----- Hotkeys -----
 
@@ -210,10 +216,22 @@ class SettingsDialog(QDialog):
         wrap1.setLayout(row1)
         form.addRow("Recenter", wrap1)
 
+        self._toggle_button = HotkeyButton(self._config.hotkey_toggle_tracking)
+        row2 = QHBoxLayout()
+        row2.addWidget(self._toggle_button, 1)
+        clear2 = QPushButton("Clear")
+        clear2.clicked.connect(self._toggle_button.clear_binding)
+        row2.addWidget(clear2)
+        wrap2 = QWidget()
+        wrap2.setLayout(row2)
+        form.addRow("Toggle tracking", wrap2)
+
         note = QLabel(
             "<i>Hotkeys are global - they work even when iRacing has focus. "
             "Click a binding, then press the key combination you want. "
-            "Escape cancels.</i>"
+            "Escape cancels. <b>Toggle tracking</b> turns inference fully "
+            "off/on (saves CPU when off) and recenters the in-game view "
+            "each time.</i>"
         )
         note.setWordWrap(True)
         note.setStyleSheet("color: #7a838c;")
@@ -254,8 +272,7 @@ class SettingsDialog(QDialog):
 
     def _harvest(self) -> AppConfig:
         width, height = self._resolution.currentData()
-        infer_dim_raw = self._infer_dim.value()
-        infer_dim = infer_dim_raw if infer_dim_raw > 0 else None
+        infer_dim = self._inference_max_dim
         preset_id = self._preset.currentData() or "custom"
         candidate = replace(
             self._config,
@@ -264,7 +281,9 @@ class SettingsDialog(QDialog):
             camera_height=int(height),
             performance_preset=preset_id,
             inference_max_dim=infer_dim,
+            cpu_affinity_mode="isolate" if self._affinity_isolate.isChecked() else "auto",
             hotkey_recenter=self._recenter_button.binding(),
+            hotkey_toggle_tracking=self._toggle_button.binding(),
         )
         # If the spinbox values now actually match one of the named
         # presets (e.g. user picked Custom but ended up on Balanced's

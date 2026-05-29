@@ -44,8 +44,14 @@ def bundled_bin_dir() -> Path:
     # Walk up from this file to find the project root, then check the dev
     # path; if the bundled-resources path next to the exe exists, prefer
     # that.
-    if hasattr(sys, "frozen") or getattr(sys, "_MEIPASS", None):
-        # Nuitka / PyInstaller distribution.
+    # Detect a packaged build. PyInstaller sets sys.frozen / _MEIPASS;
+    # Nuitka sets neither but attaches `__compiled__` to every compiled
+    # module. Without the `__compiled__` check we'd fall through to the dev
+    # path below, whose parents[3] over-shoots to the dist/ root inside a
+    # Nuitka bundle — the cause of the "NPClient binaries not found"
+    # warning. (asset_path in ui/resources.py already detects Nuitka this
+    # way; this keeps bin resolution consistent with it.)
+    if hasattr(sys, "frozen") or getattr(sys, "_MEIPASS", None) or "__compiled__" in globals():
         exe_dir = Path(sys.argv[0]).resolve().parent
         candidate = exe_dir / "resources" / "bin"
         if candidate.exists():

@@ -97,3 +97,45 @@ def test_unknown_preset_name_does_not_crash() -> None:
     than throwing — defensive against future renames."""
     cfg = AppConfig(performance_preset="nonexistent")
     assert preset_values_match("nonexistent", cfg) is False
+
+
+# --- Anti-contention knobs (OpenCV thread cap + CPU affinity) ---------
+
+
+def test_anti_contention_defaults() -> None:
+    """Fresh config caps OpenCV to a couple threads and leaves affinity
+    to the OS. These are the safe out-of-the-box values."""
+    cfg = AppConfig()
+    assert cfg.inference_thread_cap == 2
+    assert cfg.cpu_affinity_mode == "auto"
+
+
+def test_anti_contention_fields_roundtrip() -> None:
+    cfg = AppConfig(inference_thread_cap=4, cpu_affinity_mode="isolate")
+    save_app_config(cfg)
+    restored = load_app_config()
+    assert restored.inference_thread_cap == 4
+    assert restored.cpu_affinity_mode == "isolate"
+
+
+def test_anti_contention_knobs_are_preset_independent() -> None:
+    """Setting an affinity mode / thread cap must not knock a config off
+    its named preset — they're orthogonal to resolution + downscale."""
+    cfg = AppConfig(inference_thread_cap=1, cpu_affinity_mode="isolate")
+    assert preset_values_match("performance", cfg)
+
+
+def test_bad_affinity_string_falls_back_to_auto() -> None:
+    """A typo in a hand-edited TOML must not leave us in an unknown
+    affinity mode — load sanitizes it back to 'auto'."""
+    cfg = AppConfig(cpu_affinity_mode="garbage")
+    save_app_config(cfg)
+    restored = load_app_config()
+    assert restored.cpu_affinity_mode == "auto"
+
+
+def test_negative_thread_cap_clamps_to_zero() -> None:
+    cfg = AppConfig(inference_thread_cap=-5)
+    save_app_config(cfg)
+    restored = load_app_config()
+    assert restored.inference_thread_cap == 0

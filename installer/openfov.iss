@@ -26,7 +26,7 @@
 #ifndef MyAppVersion
   ; Keep in sync with pyproject.toml [project.version]. CI can override
   ; with `iscc /DMyAppVersion=1.2.3 installer/openfov.iss`.
-  #define MyAppVersion "0.1.0"
+  #define MyAppVersion "0.2.0"
 #endif
 
 [Setup]
@@ -44,7 +44,7 @@ DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
 PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=dialog commandline
-OutputBaseFilename=OpenFOV-{#MyAppVersion}-win-x64
+OutputBaseFilename=OpenFOV-{#MyAppVersion}-setup
 SetupIconFile=..\resources\icons\openfov.ico
 Compression=lzma2/ultra
 SolidCompression=yes

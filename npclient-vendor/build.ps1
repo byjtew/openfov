@@ -63,7 +63,11 @@ function Get-Tool {
 }
 
 $gcc32 = Get-Tool $Compiler32              # optional; many WinLibs builds are 64-only
-$gcc64 = Get-Tool $Compiler64 -Required
+# Local WinLibs toolchains expose the triplet-prefixed name; CI's
+# `choco install mingw` exposes plain `gcc`. Try the triplet first, then
+# fall back to `gcc` so the NPClient build works in both environments.
+$gcc64 = Get-Tool $Compiler64
+if (-not $gcc64) { $gcc64 = Get-Tool "gcc" -Required }
 
 $commonCFlags = @(
     "-O2", "-Os",

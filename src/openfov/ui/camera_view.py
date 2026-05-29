@@ -31,6 +31,10 @@ class CameraView(QLabel):
         self._frame: np.ndarray | None = None
         self._landmarks: np.ndarray | None = None
         self._detected: bool = False
+        # True when inference is toggled off via the hotkey. Shown as an
+        # explicit "tracking disabled" banner so the frozen-but-live preview
+        # isn't mistaken for a detection failure ("no face detected").
+        self._tracking_disabled: bool = False
         self._last_pixmap_size: tuple[int, int] = (0, 0)
 
     @Slot(object, object)
@@ -39,6 +43,16 @@ class CameraView(QLabel):
         self._landmarks = landmarks_2d
         self._detected = landmarks_2d is not None and len(landmarks_2d) > 0
         self._render()
+
+    def set_tracking_disabled(self, disabled: bool) -> None:
+        """Flag the hotkey-disabled state so the preview shows a clear
+        'tracking disabled' banner instead of the misleading 'no face
+        detected'. Re-renders only on change to avoid per-frame churn."""
+        if disabled == self._tracking_disabled:
+            return
+        self._tracking_disabled = disabled
+        if self._frame is not None:
+            self._render()
 
     def _render(self) -> None:
         if self._frame is None:
@@ -78,8 +92,27 @@ class CameraView(QLabel):
             finally:
                 painter.end()
 
-        # Status banner overlay if not detected.
-        if not self._detected:
+        # Status banner overlay. The hotkey-disabled state is an
+        # intentional pause, so it takes priority over "no face detected"
+        # (which would otherwise mislead the user into thinking detection
+        # failed) and is centered + tinted differently to read as a
+        # deliberate state rather than an error.
+        if self._tracking_disabled:
+            painter = QPainter(pix)
+            try:
+                painter.setPen(QColor(120, 180, 255))
+                font = painter.font()
+                font.setPointSize(13)
+                font.setBold(True)
+                painter.setFont(font)
+                painter.drawText(
+                    pix.rect(),
+                    Qt.AlignCenter,
+                    "tracking disabled — toggle hotkey to resume",
+                )
+            finally:
+                painter.end()
+        elif not self._detected:
             painter = QPainter(pix)
             try:
                 painter.setPen(QColor(240, 200, 60))
@@ -96,6 +129,18 @@ class CameraView(QLabel):
                 painter.end()
 
         self.setPixmap(pix)
+
+    def show_idle(self, message: str) -> None:
+        """Drop the current frame and show a centered message instead.
+
+        Used when the preview is intentionally paused. Setting text on a
+        QLabel clears any pixmap; nulling `_frame` keeps resizeEvent from
+        repainting the stale frame. The next `update_frame` (on resume)
+        replaces the text with live video again."""
+        self._frame = None
+        self._landmarks = None
+        self._detected = False
+        self.setText(message)
 
     def resizeEvent(self, event) -> None:
         # Re-render so the pixmap matches the new size.
