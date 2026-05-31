@@ -16,15 +16,11 @@ The installer also fetches the Microsoft Visual C++ Runtime if your
 machine doesn't already have it.
 
 On first launch Windows may show *"Windows protected your PC."*
-Click **More info → Run anyway**. OpenFOV is currently shipped unsigned
-while a free SignPath Foundation certificate is being approved; once
-signed, this prompt goes away for new downloads.
-
-A WinGet manifest will follow shortly after the first release lands —
-once merged, `winget install epalosh.OpenFOV` will work too.
+Click **More info → Run anyway**. OpenFOV is currently shipped unsigned. 
+Once signed, this prompt goes away for new downloads.
 
 See [docs/INSTALL.md](docs/INSTALL.md) for the full install + setup +
-uninstall walkthrough, including a SmartScreen screenshot.
+uninstall walkthrough.
 
 ## Quick start
 
@@ -32,10 +28,17 @@ uninstall walkthrough, including a SmartScreen screenshot.
 2. The first-run wizard walks you through: pick a webcam → calibrate
    your neutral pose (look straight, press the button) → read the
    in-game tips → done.
-3. Launch iRacing. TrackIR should be enabled by default! If not, in **Options → Graphics**, enable **TrackIR**.
+3. Launch iRacing. TrackIR should be enabled by default!
 4. Drive.
 
 To recenter your view at any time, press **F9**.
+
+## Troubleshooting
+
+There are known issues with getting OpenFOV connected to iRacing on some 
+users' setups. We are working on a solution! In the meantime, see the "Issues"
+tab for discussion on this, and how you might be able to fix the issue manually
+until a new release is dropped. ETA before 6/14. Thank you for your patience!
 
 ## Architecture
 
