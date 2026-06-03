@@ -1,80 +1,22 @@
 # OpenFOV
 
-[![CI](https://github.com/epalosh/openfov/actions/workflows/ci.yml/badge.svg)](https://github.com/epalosh/openfov/actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/release/epalosh/openfov?display_name=tag&sort=semver)](https://github.com/epalosh/openfov/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python: 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
-[![Platform: Windows](https://img.shields.io/badge/Platform-Windows%2010%2F11-blue)](#install)
+Fork of [OpenFOV](https://github.com/epalosh/openfov) replacing iRace support for UDP dispatch of the HPR values.
 
-Webcam head tracking for iRacing.
+### Quickstart
 
-## Install
-
-Download `OpenFOV-x.y.z-setup.exe` from
-[Releases](https://github.com/epalosh/openfov/releases) and run it.
-The installer also fetches the Microsoft Visual C++ Runtime if your
-machine doesn't already have it.
-
-On first launch Windows may show *"Windows protected your PC."*
-Click **More info → Run anyway**. OpenFOV is currently shipped unsigned. 
-Once signed, this prompt goes away for new downloads.
-
-See [docs/INSTALL.md](docs/INSTALL.md) for the full install + setup +
-uninstall walkthrough.
-
-## Quick start
-
-1. Run **OpenFOV**.
-2. The first-run wizard walks you through: pick a webcam → calibrate
-   your neutral pose (look straight, press the button) → read the
-   in-game tips → done.
-3. Launch iRacing. TrackIR should be enabled by default!
-4. Drive.
-
-To recenter your view at any time, press **F9**.
-
-## Troubleshooting
-
-There are known issues with getting OpenFOV connected to iRacing on some 
-users' setups. We are working on a solution! In the meantime, see the "Issues"
-tab for discussion on this, and how you might be able to fix the issue manually
-until a new release is dropped. ETA before 6/14. Thank you for your patience!
-
-## Architecture
-
-```
-Webcam → MediaPipe FaceLandmarker → One Euro filter
-                                      ↓
-                         per-axis Bezier curve + invert
-                                      ↓
-                          FT_SharedMem (FreeTrack proto)
-                                      ↓
-                      bundled NPClient64.dll (loaded by iRacing)
-                                      ↓
-                                 iRacing
+```shell
+uv init --python 3.12
+uv pip install requirements.txt
+uv pip install requirements-dev.txt
+uv run openfov
 ```
 
-OpenFOV writes the FreeTrack shared-memory section directly, and a bundled
-`NPClient64.dll` (clean MIT source, originally from
-[linux-track](https://github.com/uglyDwarf/linuxtrack)) exposes the NaturalPoint
-TrackIR API to iRacing.
+To edit the UDP target, update the `.env` file.
 
-## Tech stack
+### UDP Data-format
 
-- Python 3.12 with PySide6 (Qt 6) for the UI
-- [MediaPipe FaceLandmarker](https://developers.google.com/mediapipe/solutions/vision/face_landmarker)
-  for 478-landmark face tracking
-- One Euro Filter for low-lag / low-jitter smoothing
-- Compiled to a standalone Windows binary with [Nuitka](https://nuitka.net)
-- Wrapped in [Inno Setup](https://jrsoftware.org/isinfo.php) for installation
-
-## License
-
-MIT. See [LICENSE](LICENSE). Third-party attributions are in [NOTICE](NOTICE).
-
-## Trademarks
-
-TrackIR is a trademark of NaturalPoint, Inc. OpenFOV is not affiliated with,
-endorsed by, or sponsored by NaturalPoint. Mentions of TrackIR and the
-NPClient API exist only to describe interoperability with third-party games
-that implement support for that API.
+```json
+{
+  "rotation": [ <heading_deg>, <pitch_deg>, <roll_deg> ]
+}
+```
