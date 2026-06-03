@@ -1,19 +1,16 @@
 """OutputManager — orchestrates the freestanding output stack.
 
 Composes:
-- FreeTrackWriter   (writes the shared memory)
-- TrackIRShim       (launches dummy TrackIR.exe)
-- NPClient registry (set on first start, never re-checked unless
-                     `force_register` is True)
+- UdpJsonWriter     (dispatches each pose as JSON over UDP)
 
-Plus per-game settings: GameID + 8-byte XOR encryption key. Updating the
-active game is `set_game(profile)` — drops the writer in/out of the
-right encryption mode without restarting.
+Plus per-game settings carried over from the FreeTrack era: GameID + 8-byte
+XOR encryption key. These are no-ops for the UDP sink but `set_game(profile)`
+still validates them so `GameOutputProfile` stays meaningful.
 
 Lifecycle is two-phase:
     mgr = OutputManager()
-    mgr.start()                       # registers NPClient + launches dummy
-    mgr.set_game(iracing_profile)     # configures encryption / GameID
+    mgr.start()                       # opens the UDP socket
+    mgr.set_game(iracing_profile)     # (no-op for UDP)
     mgr.write(pose)                   # call every tracker frame
     mgr.stop()                        # tears down in reverse order
 
@@ -24,9 +21,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from openfov.output.freetrack import FreeTrackWriter
-from openfov.output.npclient_bootstrap import ensure_registered
-from openfov.output.trackir_shim import TrackIRShim
+from openfov.output.udp_json import UdpJsonWriter
 from openfov.tracker.base import Pose6DOF
 
 logger = logging.getLogger(__name__)
@@ -51,9 +46,7 @@ class OutputManager:
     """Owner of the full output stack."""
 
     def __init__(self) -> None:
-        self._writer = FreeTrackWriter()
-        self._shim = TrackIRShim()
-        self._registered = False
+        self._writer = UdpJsonWriter()
         self._running = False
         self._current_profile: GameOutputProfile | None = None
 
@@ -64,24 +57,19 @@ class OutputManager:
     # -- lifecycle ------------------------------------------------------
 
     def start(self, *, force_register: bool = False) -> None:
-        """Bring the output stack up. Safe to call multiple times."""
+        """Bring the output stack up. Safe to call multiple times.
+
+        `force_register` is accepted for backward compatibility with callers
+        from the FreeTrack era; it has no effect on the UDP sink."""
         if self._running:
             return
-        if not self._registered or force_register:
-            try:
-                ensure_registered()
-                self._registered = True
-            except Exception as exc:
-                logger.warning("NPClient registry update failed: %s", exc)
         self._writer.open()
-        self._shim.start()
         self._running = True
         logger.info("OutputManager started")
 
     def stop(self) -> None:
         if not self._running:
             return
-        self._shim.stop()
         self._writer.close()
         self._running = False
         logger.info("OutputManager stopped")
@@ -96,8 +84,9 @@ class OutputManager:
     # -- per-game settings ---------------------------------------------
 
     def set_game(self, profile: GameOutputProfile) -> None:
-        """Switch GameID + XOR encryption key. NPClient picks the change up
-        on its next read (it inspects GameID == GameID2 to detect changes)."""
+        """Switch GameID + XOR encryption key. These are no-ops for the UDP
+        sink, but the encryption key is still length-validated so an invalid
+        GameOutputProfile is caught here rather than passed silently."""
         if self._current_profile == profile:
             return
         self._writer.set_game_id(profile.game_id)

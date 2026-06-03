@@ -82,6 +82,12 @@ def main(argv: list[str] | None = None) -> int:
         # only and keep running rather than refusing to launch.
         logger.warning("Could not enable file logging: %s", exc)
 
+    # Populate os.environ from a .env file (if present) so the UDP/JSON
+    # output can resolve OPENFOV_UDP_TARGET. Real env vars take precedence.
+    from openfov.persistence.env import load_dotenv
+
+    load_dotenv()
+
     if args.headless or args.debug_tracker:
         return _run_headless(
             use_debug=args.debug_tracker,
@@ -387,7 +393,7 @@ def _run_headless(use_debug: bool, camera_index: int, duration: float) -> int:
 
     from openfov.filtering.pipeline import PerAxisFilters
     from openfov.mapping.axis_mapper import AxisMapper
-    from openfov.output.freetrack import FreeTrackWriter
+    from openfov.output.udp_json import UdpJsonWriter
     from openfov.tracker.base import TrackerSettings
     from openfov.tracker.debug_tracker import DebugSineTracker
 
@@ -420,7 +426,7 @@ def _run_headless(use_debug: bool, camera_index: int, duration: float) -> int:
     tracker.start(TrackerSettings())
     filters = PerAxisFilters()
     mapper = AxisMapper()
-    writer = FreeTrackWriter()
+    writer = UdpJsonWriter()
     writer.open()
 
     stop = False
